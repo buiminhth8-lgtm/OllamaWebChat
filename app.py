@@ -3,12 +3,14 @@ import os
 
 from flask import Flask
 
+from platform_scan import platform_bp
 from routes import bp
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
     app.register_blueprint(bp)
+    app.register_blueprint(platform_bp)
     return app
 
 

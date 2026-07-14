@@ -72,6 +72,27 @@ header h1 {
   min-width: 260px;
 }
 
+.top-nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.top-nav a {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.top-nav a.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
 select,
 button,
 textarea {
