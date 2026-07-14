@@ -1,6 +1,6 @@
 # Ollama Web Chat
 
-简单的 Flask Ollama 网页客户端，支持模型切换、多轮对话、流式输出、停止生成、思考过程显示、历史裁剪、清空对话、局域网访问，以及 RK3588 智能计算平台能力检测。
+简单的 Flask Ollama 网页客户端，支持模型切换、多轮对话、流式输出、停止生成、思考过程显示、历史裁剪、清空对话、局域网访问、RK3588 智能计算平台能力检测，以及 RK3588 智能平台虚拟演示。
 
 ## 项目结构
 
@@ -10,11 +10,16 @@ config.py                      # 环境变量配置
 routes.py                      # AI 对话页面和 API 路由
 templates/index.html           # AI 对话页面
 templates/platform.html        # RK3588 平台能力检测页面
+templates/demo.html            # RK3588 智能平台虚拟演示页面
 static/css/app.css             # 通用和对话页面样式
 static/css/platform.css        # 平台检测页面样式
+static/css/demo.css            # 虚拟演示页面样式
 static/js/app.js               # AI 对话前端交互
 static/js/platform.js          # 平台检测前端交互
+static/js/demo/                # 虚拟演示动画模块
+static/vendor/echarts.min.js   # 本地 ECharts
 platform_scan/                 # 平台扫描后端模块
+demo/                          # 虚拟演示后端模块和模拟数据
 tests/                         # 标准库 unittest 测试
 ```
 
@@ -49,6 +54,7 @@ python3 app.py
 ```text
 AI 对话：http://127.0.0.1:3000/
 RK3588 平台能力检测：http://127.0.0.1:3000/platform
+RK3588 智能平台虚拟演示：http://127.0.0.1:3000/demo
 ```
 
 其他电脑访问：
@@ -138,11 +144,67 @@ POST /api/platform/scan
 
 `POST /api/platform/scan` 返回 `application/x-ndjson; charset=utf-8`，页面会按检测进度实时更新六项结果。
 
+## RK3588智能平台虚拟演示
+
+页面地址：
+
+```text
+/demo
+```
+
+该页面不采集真实系统数据，不执行硬件检测，不连接真实无人机、飞控、摄像头、NPU或集群节点。所有数据均来自 `demo/mock_data.py`，并统一标识为：
+
+```text
+模拟数据
+虚拟演示
+Demo Mode
+```
+
+六项能力说明：
+
+```text
+1. 核心芯片与架构国产化：SVG 芯片架构点亮和数据总线光效
+2. DeepSeek / 通义千问大模型：Token 流动和逐字输出动画
+3. 集群任务协同执行：四架虚拟无人机任务分配、掉线和重分配
+4. AI目标识别、跟踪与智能决策：Canvas 模拟画面、检测框、轨迹和决策流程
+5. 底层驱动及算法部署环境：可筛选、可展开、可导出 CSV 的虚拟组件表格
+6. 系统稳定可靠与实时响应：ECharts 仪表趋势图、模拟告警和恢复时间线
+```
+
+演示模式：
+
+- 自动演示：六项依次播放。
+- 手动演示：点击能力步骤单独播放。
+- 低性能模式：降低动画频率和刷新频率；浏览器设置减少动态效果时会自动启用。
+
+报告导出：
+
+- 点击“导出演示报告”会在浏览器生成 JSON 文件。
+- 报告包含 `demo=true`、`data_source=mock`、`not_real_device_data=true`。
+- 报告是虚拟演示报告，不是真实设备检测报告。
+
+虚拟数据免责声明：
+
+```text
+本页面全部数据、设备状态、性能指标、任务状态和识别结果均为虚拟生成，仅用于方案展示，不代表真实RK3588设备、无人机、飞控、NPU或模型运行结果。
+```
+
+演示 API：
+
+```text
+GET /api/demo/config
+GET /api/demo/scenario
+GET /api/demo/report
+GET /api/demo/metrics
+```
+
+这些 API 不读取 `/proc`、`/sys`、`/dev`，不执行系统命令，不访问 Ollama API。
+
 ## 测试
 
 ```bash
 python3 -m unittest discover -s tests -v
-python3 -m compileall app.py config.py routes.py platform_scan
+python3 -m compileall app.py config.py routes.py platform_scan demo
 ```
 
 手工验证：
