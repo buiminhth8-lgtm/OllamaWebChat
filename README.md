@@ -15,6 +15,8 @@ static/js/app.js       # 前端交互逻辑
 
 ## 安装
 
+兼容 Python 3.8+，Ubuntu 20.04 自带的 Python 3.8.2 可直接使用。
+
 ```bash
 cd OllamaWebChat
 python3 -m venv venv

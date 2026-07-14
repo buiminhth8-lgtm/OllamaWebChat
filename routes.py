@@ -1,5 +1,5 @@
 import json
-from typing import Iterator, Union
+from typing import Dict, Iterator, List, Union
 
 import requests
 from flask import Blueprint, Response, jsonify, render_template, request
@@ -27,11 +27,11 @@ def trim_text(text: str, limit: int = MAX_MESSAGE_CHARS) -> str:
     return TRIM_PREFIX + text[-keep:]
 
 
-def clean_messages(messages: object) -> list[dict[str, str]]:
+def clean_messages(messages: object) -> List[Dict[str, str]]:
     if not isinstance(messages, list):
         return []
 
-    cleaned: list[dict[str, str]] = []
+    cleaned: List[Dict[str, str]] = []
     for message in messages:
         if not isinstance(message, dict):
             continue
