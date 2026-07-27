@@ -23,47 +23,112 @@ demo/                          # 虚拟演示后端模块和模拟数据
 tests/                         # 标准库 unittest 测试
 ```
 
-## 安装
+## 准备环境
+
+### 1. 安装基础环境
+
+```bash
+sudo apt-get update
+
+# 安装 git   python3
+sudo apt-get install git python3
+
+```
+----
+
+### 1.安装 ollama 
+
+拷贝 ollama-linux-arm64.tar.zst 到目标机器 解压
+
+```bash
+# 先创建目标目录（如果不存在）
+mkdir -p ~/ollama-server
+# 解压到该目录
+sudo tar -xvf ollama-linux-arm64.tar.zst 
+
+```
+
+
+### 2. 安装 OllamaWebChat
 
 兼容 Python 3.8+，Ubuntu 20.04 自带的 Python 3.8.2 可直接使用。
 
 ```bash
+git clone https://github.com/buiminhth8-lgtm/OllamaWebChat.git
+
 cd OllamaWebChat
+
 python3 -m venv venv
+
 source venv/bin/activate
+
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-## 启动
+
+### 3. 模型安装
+
+新建窗口启动 ollama-serve
+
+```bash
+ #杀死已存在的 ollama进程
+pkill ollama 
+
+cd ~/          
+
+export OLLAMA_HOST=0.0.0.0:11434
+
+# 启动服务
+./ollama-server/bin/ollama serve
+```
+
+再新建窗口安装模型
+
+```bash
+cd ~/
+
+# 安装费 deepseek-r1:1.5b 耐心等待安装完毕 
+./ollama-server/bin/ollama run  deepseek-r1:1.5b
+
+# 安装费 qwen3.5:0.8b 耐心等待安装完毕 
+./ollama-server/bin/ollama run  qwen3.5:0.8b
+
+```
+
+
+### 4. 启动服务
 
 Ollama 默认端口 11434：
 
 ```bash
+cd ~/OllamaWebChat
+
+
 export OLLAMA_BASE_URL=http://127.0.0.1:11434
+
 python3 app.py
-```
 
-也可以使用启动脚本：
-
-```bash
-./start.sh
 ```
 
 页面地址：
 
 ```text
-AI 对话：http://127.0.0.1:3000/
-RK3588 平台能力检测：http://127.0.0.1:3000/platform
-RK3588 智能平台虚拟演示：http://127.0.0.1:3000/demo
+AI 对话：http://设备IP:3000/
+RK3588 平台能力检测：http://设备IP:3000/platform
+RK3588 智能平台虚拟演示：http://设备IP:3000/demo
 ```
 
-其他电脑访问：
 
-```text
-http://Debian服务器IP:3000
-```
+
+
+
+
+
 
 ## AI 对话配置
+
+扩展配置 可以不看
+
 
 ```bash
 export WEB_HOST=0.0.0.0
