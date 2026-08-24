@@ -31,6 +31,10 @@ def _get_dirs(name, default):
 
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+OLLAMA_API_TIMEOUT = _get_float("OLLAMA_API_TIMEOUT", 3.0, minimum=0.1, maximum=60.0)
+OLLAMA_SYSTEMCTL_TIMEOUT = _get_float("OLLAMA_SYSTEMCTL_TIMEOUT", 10.0, minimum=0.1, maximum=60.0)
+OLLAMA_START_WAIT_TIMEOUT = _get_float("OLLAMA_START_WAIT_TIMEOUT", 30.0, minimum=0.1, maximum=300.0)
+OLLAMA_START_POLL_INTERVAL = _get_float("OLLAMA_START_POLL_INTERVAL", 0.5, minimum=0.05, maximum=10.0)
 REQUEST_TIMEOUT = _get_int("OLLAMA_REQUEST_TIMEOUT", 600, minimum=1)
 MAX_MESSAGE_CHARS = _get_int("MAX_MESSAGE_CHARS", 8000, minimum=100)
 MAX_HISTORY_MESSAGES = _get_int("MAX_HISTORY_MESSAGES", 40, minimum=1)
