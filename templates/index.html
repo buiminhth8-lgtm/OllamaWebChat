@@ -42,8 +42,7 @@
         aria-label="设置"
       >⚙</button>
     </div>
-    <!-- 清空对话：Header 瘦身后暂以隐藏入口保留能力，UI-Slice 4 迁入 Settings Drawer -->
-    <button id="clearChat" class="secondary" type="button" hidden>清空对话</button>
+    <!-- 清空对话已迁移至 Composer 次级操作区（UI-Slice 3） -->
     <!-- 全局状态提示：仅在有内容时以浮动条显示，不再常驻 Header -->
     <span id="status" role="status" aria-live="polite"></span>
   </header>
@@ -134,13 +133,24 @@
       </div>
     </main>
 
-    <!-- 子区域：输入区 -->
+    <!-- 子区域：输入区（UI-Slice 3：紧凑 Composer，发送/停止为单一主操作位） -->
     <footer id="composerBar">
-      <form id="chatForm">
-        <div class="input-row">
-          <textarea id="prompt" placeholder="输入消息。Enter 发送，Shift+Enter 换行。" required></textarea>
-          <button id="sendButton" class="primary" type="submit">发送</button>
-          <button id="stopButton" class="danger" type="button" disabled>停止</button>
+      <form id="chatForm" class="composer">
+        <textarea
+          id="prompt"
+          rows="1"
+          aria-label="输入消息"
+          placeholder="输入消息。Enter 发送，Shift+Enter 换行。"
+          required
+        ></textarea>
+        <div class="composer-actions">
+          <div class="composer-secondary">
+            <button id="clearChat" class="ghost-button" type="button">清空对话</button>
+          </div>
+          <div class="composer-primary">
+            <button id="sendButton" class="primary" type="submit" disabled>发送</button>
+            <button id="stopButton" class="stop-button" type="button" hidden disabled>停止</button>
+          </div>
         </div>
         <div class="hint">对话记录保存在当前浏览器中，过长历史会自动裁剪后发送给 Ollama。</div>
       </form>

@@ -52,6 +52,10 @@ let appConfig = { ...DEFAULT_CONFIG };
 let messages = loadMessages();
 let abortController = null;
 let sideChannelThinking = "";
+const composerUiState = {
+  generating: false,
+  composing: false,
+};
 const ollamaUiState = {
   config: null,
   status: null,
@@ -257,8 +261,14 @@ function trimText(text, limit = appConfig.maxMessageChars) {
 function normalizeMessage(message) {
   if (!message || typeof message !== "object") return null;
   if (!["system", "user", "assistant"].includes(message.role)) return null;
-  const content = typeof message.content === "string" ? trimText(message.content.trim()) : "";
-  const thinking = typeof message.thinking === "string" ? trimText(message.thinking.trim()) : "";
+  const content =
+    typeof message.content === "string" && message.content.trim()
+      ? trimText(message.content)
+      : "";
+  const thinking =
+    typeof message.thinking === "string" && message.thinking.trim()
+      ? trimText(message.thinking)
+      : "";
   if (!content && !thinking) return null;
   return { role: message.role, content, thinking };
 }
@@ -400,12 +410,30 @@ function setStatus(text, isError = false) {
   statusElement.classList.toggle("error", isError);
 }
 
-function setBusy(busy) {
-  sendButton.disabled = busy;
-  stopButton.disabled = !busy;
-  modelSelect.disabled = busy;
-  clearChatButton.disabled = busy;
-  sendButton.textContent = busy ? "生成中..." : "发送";
+function resizePromptInput() {
+  promptInput.style.height = "auto";
+  const maxHeight = Number.parseFloat(getComputedStyle(promptInput).maxHeight) || 180;
+  const nextHeight = Math.min(promptInput.scrollHeight, maxHeight);
+  promptInput.style.height = `${nextHeight}px`;
+  promptInput.style.overflowY = promptInput.scrollHeight > maxHeight ? "auto" : "hidden";
+}
+
+function updateComposerState() {
+  const generating = composerUiState.generating;
+  const hasInput = promptInput.value.trim().length > 0;
+
+  sendButton.hidden = generating;
+  sendButton.disabled = generating || !hasInput;
+  stopButton.hidden = !generating;
+  stopButton.disabled = !generating;
+  modelSelect.disabled = generating;
+  clearChatButton.disabled = generating;
+  chatForm.setAttribute("aria-busy", String(generating));
+}
+
+function setGeneratingState(generating) {
+  composerUiState.generating = Boolean(generating);
+  updateComposerState();
 }
 
 async function loadConfig() {
@@ -465,14 +493,16 @@ function stopGeneration() {
 }
 
 async function sendMessage(text) {
+  if (composerUiState.generating) return;
+
   const model = modelSelect.value;
   if (!model) {
     alert("请先安装并选择一个 Ollama 模型。");
     return;
   }
 
-  const cleanText = trimText(text.trim());
-  if (cleanText !== text.trim()) {
+  const cleanText = trimText(text);
+  if (cleanText !== text) {
     setStatus(`消息过长，已裁剪到 ${appConfig.maxMessageChars} 字`);
   } else {
     setStatus("");
@@ -487,7 +517,7 @@ async function sendMessage(text) {
   messages.push(assistantMessage);
   const assistantView = appendMessageElement("assistant", "", "");
 
-  setBusy(true);
+  setGeneratingState(true);
   setStatus(`正在使用 ${model} 生成...`);
   abortController = new AbortController();
   sideChannelThinking = "";
@@ -555,7 +585,7 @@ async function sendMessage(text) {
     }
   } finally {
     abortController = null;
-    setBusy(false);
+    setGeneratingState(false);
     promptInput.focus();
   }
 }
@@ -735,17 +765,41 @@ function clearConversation() {
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const text = promptInput.value.trim();
-  if (!text || sendButton.disabled) return;
+  const text = promptInput.value;
+  if (!text.trim() || composerUiState.generating) return;
+  if (!modelSelect.value) {
+    alert("请先安装并选择一个 Ollama 模型。");
+    return;
+  }
   promptInput.value = "";
+  resizePromptInput();
+  updateComposerState();
   await sendMessage(text);
 });
 
 promptInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !event.isComposing &&
+    !composerUiState.composing &&
+    event.keyCode !== 229
+  ) {
     event.preventDefault();
     chatForm.requestSubmit();
   }
+});
+
+promptInput.addEventListener("input", () => {
+  resizePromptInput();
+  updateComposerState();
+});
+promptInput.addEventListener("compositionstart", () => {
+  composerUiState.composing = true;
+});
+promptInput.addEventListener("compositionend", () => {
+  composerUiState.composing = false;
+  updateComposerState();
 });
 
 modelSelect.addEventListener("change", () => localStorage.setItem("ollama_web_chat_model", modelSelect.value));
@@ -761,6 +815,8 @@ welcomeCardsElement.addEventListener("click", (event) => {
   const card = event.target.closest(".welcome-card");
   if (!card) return;
   promptInput.value = card.dataset.prompt || "";
+  resizePromptInput();
+  updateComposerState();
   promptInput.focus();
 });
 ollamaConfigForm.addEventListener("submit", saveOllamaConfig);
@@ -773,6 +829,8 @@ modelPullForm.addEventListener("submit", (event) => {
 
 // 初始化入口：仅在脚本加载时执行一次
 renderMessages();
+resizePromptInput();
+updateComposerState();
 loadConfig();
 loadModels();
 refreshOllamaManagement();

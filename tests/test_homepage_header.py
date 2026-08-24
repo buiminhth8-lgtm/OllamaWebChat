@@ -42,11 +42,21 @@ class HomepageHeaderTest(unittest.TestCase):
         self.assertNotIn("刷新模型", toolbar)
         self.assertNotIn("清空对话", toolbar)
 
-    def test_clear_chat_capability_is_preserved_as_hidden_entry(self):
-        header = self.get_header_html()
-        clear_match = re.search(r'<button[^>]*id="clearChat"[^>]*>', header)
+    def test_clear_chat_capability_moves_from_header_to_composer(self):
+        html = self.client.get("/").get_data(as_text=True)
+        header = re.search(r"<header[^>]*>(.*?)</header>", html, re.DOTALL)
+        composer = re.search(
+            r'<form id="chatForm" class="composer">(.*?)</form>',
+            html,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(header)
+        self.assertIsNotNone(composer)
+        self.assertNotIn('id="clearChat"', header.group(1))
+        clear_match = re.search(r'<button[^>]*id="clearChat"[^>]*>', composer.group(1))
         self.assertIsNotNone(clear_match)
-        self.assertIn("hidden", clear_match.group(0))
+        self.assertNotIn("hidden", clear_match.group(0))
+        self.assertEqual(html.count('id="clearChat"'), 1)
 
     def test_model_select_still_present(self):
         self.assertIn('id="modelSelect"', self.get_header_html())
