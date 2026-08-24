@@ -8,6 +8,7 @@ from config import (
     MAX_HISTORY_CHARS,
     MAX_HISTORY_MESSAGES,
     MAX_MESSAGE_CHARS,
+    MAX_MODEL_NAME_LENGTH,
     OLLAMA_BASE_URL,
     REQUEST_TIMEOUT,
 )
@@ -213,6 +214,55 @@ def ollama_start():
             },
         }
     ), status_code
+
+
+@bp.post("/api/ollama/pull")
+def ollama_pull():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or "model" not in payload:
+        return jsonify({"ok": False, "error": "请求体必须包含 model 参数"}), 400
+
+    model = payload["model"]
+    if not isinstance(model, str):
+        return jsonify({"ok": False, "error": "model 参数必须为字符串"}), 400
+    model = model.strip()
+    if not model:
+        return jsonify({"ok": False, "error": "model 不能为空"}), 400
+    if len(model) > MAX_MODEL_NAME_LENGTH:
+        return jsonify({"ok": False, "error": "model 名称过长"}), 400
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in model):
+        return jsonify({"ok": False, "error": "model 包含非法字符"}), 400
+
+    manager = current_app.extensions["ollama_service"]
+    try:
+        api_status = manager.check_api()
+    except Exception:
+        current_app.logger.error("Failed to check Ollama API readiness")
+        return jsonify(
+            {
+                "ok": False,
+                "error": "service_manager_error",
+                "message": "无法确认 Ollama 服务状态",
+            }
+        ), 500
+
+    if not api_status.get("ready"):
+        return jsonify(
+            {
+                "ok": False,
+                "error": "ollama_not_ready",
+                "message": "Ollama 未运行，请先启动 Ollama 服务",
+            }
+        ), 503
+
+    if not manager.try_begin_pull(model):
+        return jsonify({"ok": False, "error": "model pull already in progress"}), 409
+
+    return Response(
+        manager.stream_pull(model),
+        content_type="application/x-ndjson; charset=utf-8",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @bp.get("/api/models")

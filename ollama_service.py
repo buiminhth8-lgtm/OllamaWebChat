@@ -1,13 +1,16 @@
+import json
 import subprocess
 import threading
 import time
-from typing import Dict, Optional
+from typing import Dict, Iterator, Optional, Set
 
 import requests
 
 from config import (
     OLLAMA_API_TIMEOUT,
     OLLAMA_BASE_URL,
+    OLLAMA_PULL_CONNECT_TIMEOUT,
+    OLLAMA_PULL_READ_TIMEOUT,
     OLLAMA_START_POLL_INTERVAL,
     OLLAMA_START_WAIT_TIMEOUT,
     OLLAMA_SYSTEMCTL_TIMEOUT,
@@ -22,6 +25,11 @@ def _error(code: str, message: str) -> Dict[str, str]:
     return {"code": code, "message": message}
 
 
+def _ndjson_error(code: str, message: str) -> bytes:
+    payload = json.dumps({"error": {"code": code, "message": message}}, ensure_ascii=False)
+    return payload.encode("utf-8") + b"\n"
+
+
 class OllamaServiceManager:
     def __init__(
         self,
@@ -31,6 +39,8 @@ class OllamaServiceManager:
         systemctl_timeout: float = OLLAMA_SYSTEMCTL_TIMEOUT,
         ready_timeout: float = OLLAMA_START_WAIT_TIMEOUT,
         poll_interval: float = OLLAMA_START_POLL_INTERVAL,
+        pull_connect_timeout: float = OLLAMA_PULL_CONNECT_TIMEOUT,
+        pull_read_timeout: float = OLLAMA_PULL_READ_TIMEOUT,
     ):
         self.settings_store = settings_store
         self.base_url = base_url.rstrip("/")
@@ -38,7 +48,11 @@ class OllamaServiceManager:
         self.systemctl_timeout = systemctl_timeout
         self.ready_timeout = ready_timeout
         self.poll_interval = poll_interval
+        self.pull_connect_timeout = pull_connect_timeout
+        self.pull_read_timeout = pull_read_timeout
         self._start_lock = threading.Lock()
+        self._pull_locks_guard = threading.Lock()
+        self._active_pulls: Set[str] = set()
 
     def get_binary_path(self) -> Optional[str]:
         config = self.settings_store.get_ollama_config()
@@ -262,3 +276,58 @@ class OllamaServiceManager:
                 "error": _error("systemctl_failed", message),
             }
         return {"ok": True}
+
+    def try_begin_pull(self, model_name: str) -> bool:
+        with self._pull_locks_guard:
+            if model_name in self._active_pulls:
+                return False
+            self._active_pulls.add(model_name)
+            return True
+
+    def end_pull(self, model_name: str) -> None:
+        with self._pull_locks_guard:
+            self._active_pulls.discard(model_name)
+
+    def stream_pull(self, model_name: str) -> Iterator[bytes]:
+        try:
+            try:
+                response = requests.post(
+                    f"{self.base_url}/api/pull",
+                    json={"name": model_name, "stream": True},
+                    stream=True,
+                    timeout=(self.pull_connect_timeout, self.pull_read_timeout),
+                )
+            except requests.Timeout:
+                yield _ndjson_error("timeout", "连接 Ollama API 超时")
+                return
+            except requests.ConnectionError:
+                yield _ndjson_error("connection_error", "无法连接 Ollama API")
+                return
+            except requests.RequestException:
+                yield _ndjson_error("request_error", "Ollama API 请求失败")
+                return
+
+            with response:
+                if not 200 <= response.status_code < 300:
+                    yield _ndjson_error(
+                        "http_error",
+                        f"Ollama API 返回 HTTP {response.status_code}",
+                    )
+                    return
+                try:
+                    for raw_line in response.iter_lines():
+                        if not raw_line:
+                            continue
+                        line = raw_line.decode("utf-8", errors="replace").strip()
+                        if not line:
+                            continue
+                        try:
+                            json.loads(line)
+                        except ValueError:
+                            yield _ndjson_error("invalid_json", "Ollama API 返回的 JSON 无效")
+                            return
+                        yield line.encode("utf-8") + b"\n"
+                except requests.RequestException:
+                    yield _ndjson_error("stream_interrupted", "与 Ollama API 的连接中断")
+        finally:
+            self.end_pull(model_name)
