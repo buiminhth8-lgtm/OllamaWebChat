@@ -1,8 +1,12 @@
 __pycache__/
+*.pyc
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
 venv/
 data/*.json
 !data/.gitkeep
-ollama-web-chat.log
+*.log
+*.tmp
+*.temp
+*~

@@ -1,1 +1,5 @@
+*.sh text eol=lf
+*.service text eol=lf
+*.py text eol=lf
+
 static/vendor/echarts.min.js -text
