@@ -281,7 +281,7 @@ def models():
             if item.get("name") or item.get("model")
         ]
         return jsonify({"models": models})
-    except requests.RequestException as exc:
+    except (requests.RequestException, ValueError) as exc:
         return jsonify({"error": f"无法连接 Ollama：{exc}", "ollama_base_url": OLLAMA_BASE_URL}), 502
 
 

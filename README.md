@@ -288,6 +288,9 @@ curl -N -X POST http://127.0.0.1:3000/api/platform/scan
 一键安装 systemd 服务：
 
 ```bash
+git clone https://github.com/buiminhth8-lgtm/OllamaWebChat.git
+cd OllamaWebChat
+
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -298,12 +301,11 @@ pip install -r requirements.txt
 自启动策略：
 
 ```text
-ollama-webchat.service          Web 服务：enabled，开机自动启动
-ollama-webchat-ollama.service   Ollama：disabled，不开机启动，
-                                由网页“启动 Ollama”按钮按需调用 systemctl start 启动
+Web：开机自动启动（enabled）
+Ollama：默认不自启（disabled），由网页启动
 ```
 
-验证命令：
+常用命令：
 
 ```bash
 systemctl status ollama-webchat.service
@@ -311,6 +313,20 @@ systemctl status ollama-webchat-ollama.service
 
 journalctl -u ollama-webchat.service -f
 journalctl -u ollama-webchat-ollama.service -f
+
+sudo systemctl restart ollama-webchat.service
+```
+
+网页操作流程：
+
+```text
+配置 Ollama 安装目录
+→ 保存
+→ 检查状态
+→ 启动 Ollama
+→ 输入 deepseek-r1:1.5b
+→ 下载
+→ 下载完成后模型列表自动刷新并选中新模型
 ```
 
 说明：
