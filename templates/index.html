@@ -18,7 +18,7 @@
       └── #composerBar   输入区（Chat 表单）
 
   约定：所有现有 DOM ID 是 JS 的稳定性契约，后续 UI 重构移动元素时必须保留。
-  未来 Settings Drawer 仅做结构占位（见下方注释），本阶段不实现。
+  Settings Drawer 仅提供配置中心框架，现有业务组件仍保留在原位置。
 -->
 <div class="app" id="page">
   <!-- 区域：header（UI-Slice 1：精简导航，仅 Logo/主导航/模型选择/设置入口） -->
@@ -40,6 +40,8 @@
         type="button"
         title="设置"
         aria-label="设置"
+        aria-controls="settingsDrawer"
+        aria-expanded="false"
       >⚙</button>
     </div>
     <!-- 清空对话已迁移至 Composer 次级操作区（UI-Slice 3） -->
@@ -51,7 +53,7 @@
   <div class="chat-main" id="chatMain">
     <!--
       子区域：Ollama 管理/配置（UI-Slice 2 起改为默认折叠的兼容容器）
-      所有业务 DOM 与 ID 原样保留，供 UI-Slice 4~6 迁移到 Settings Drawer。
+      所有业务 DOM 与 ID 原样保留，供 UI-Slice 5/6 迁移到 Settings Drawer。
     -->
     <details class="ollama-panel" id="ollamaPanel">
       <summary class="ollama-panel-summary" id="ollamaPanelSummary">
@@ -157,5 +159,40 @@
     </footer>
   </div>
 </div>
+
+<!-- UI-Slice 4：配置中心 Drawer 框架；业务组件将在 UI-Slice 5/6 迁移。 -->
+<div id="settingsOverlay" class="settings-overlay" aria-hidden="true"></div>
+<aside
+  id="settingsDrawer"
+  class="settings-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="settingsDrawerTitle"
+  aria-hidden="true"
+>
+  <header class="settings-drawer-header">
+    <h2 id="settingsDrawerTitle">配置中心</h2>
+    <button
+      id="settingsCloseButton"
+      class="settings-close-button"
+      type="button"
+      aria-label="关闭配置中心"
+    >×</button>
+  </header>
+  <div class="settings-drawer-content">
+    <section class="settings-section" aria-labelledby="settingsOllamaHeading">
+      <h3 id="settingsOllamaHeading">Ollama 服务</h3>
+      <p>服务配置与控制将在后续界面迁移中放置于此。</p>
+    </section>
+    <section class="settings-section" aria-labelledby="settingsModelsHeading">
+      <h3 id="settingsModelsHeading">模型管理</h3>
+      <p>模型管理内容将在后续界面迁移中放置于此。</p>
+    </section>
+    <section class="settings-section" aria-labelledby="settingsRuntimeHeading">
+      <h3 id="settingsRuntimeHeading">运行信息</h3>
+      <p>运行信息将在后续界面迁移中放置于此。</p>
+    </section>
+  </div>
+</aside>
 </body>
 </html>

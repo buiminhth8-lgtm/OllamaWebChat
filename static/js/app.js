@@ -16,6 +16,11 @@ const settingsButton = document.getElementById("settingsButton");
 const clearChatButton = document.getElementById("clearChat");
 const statusElement = document.getElementById("status");
 
+// 区域：配置中心 Drawer（UI-Slice 4，仅框架，不迁移业务组件）
+const settingsOverlay = document.getElementById("settingsOverlay");
+const settingsDrawer = document.getElementById("settingsDrawer");
+const settingsCloseButton = document.getElementById("settingsCloseButton");
+
 // 区域：chat-main / Ollama 管理/配置（#ollamaPanel）
 const ollamaConfigForm = document.getElementById("ollamaConfigForm");
 const ollamaInstallDirInput = document.getElementById("ollamaInstallDir");
@@ -758,6 +763,34 @@ function clearConversation() {
   setStatus("对话已清空");
 }
 
+function setSettingsDrawerOpen(open) {
+  if (!settingsButton || !settingsOverlay || !settingsDrawer || !settingsCloseButton) return;
+
+  const shouldOpen = Boolean(open);
+  const wasOpen = settingsDrawer.classList.contains("is-open");
+  if (!shouldOpen && wasOpen) settingsButton.focus();
+
+  settingsDrawer.classList.toggle("is-open", shouldOpen);
+  settingsOverlay.classList.toggle("is-open", shouldOpen);
+  settingsDrawer.setAttribute("aria-hidden", String(!shouldOpen));
+  settingsButton.setAttribute("aria-expanded", String(shouldOpen));
+  document.body.classList.toggle("settings-drawer-open", shouldOpen);
+
+  if (shouldOpen) {
+    requestAnimationFrame(() => {
+      if (settingsDrawer.classList.contains("is-open")) settingsCloseButton.focus();
+    });
+  }
+}
+
+function openSettingsDrawer() {
+  setSettingsDrawerOpen(true);
+}
+
+function closeSettingsDrawer() {
+  setSettingsDrawerOpen(false);
+}
+
 // ============================================================
 // 事件绑定基线：脚本以 defer 方式加载并只执行一次，
 // 每个元素的事件在此处仅绑定一次，禁止在渲染函数中重复绑定。
@@ -805,9 +838,13 @@ promptInput.addEventListener("compositionend", () => {
 modelSelect.addEventListener("change", () => localStorage.setItem("ollama_web_chat_model", modelSelect.value));
 stopButton.addEventListener("click", stopGeneration);
 clearChatButton.addEventListener("click", clearConversation);
-// Settings 入口：UI-Slice 1 仅保留占位，Drawer 在 UI-Slice 4 实现
-settingsButton.addEventListener("click", () => {
-  setStatus("设置功能即将上线");
+settingsButton?.addEventListener("click", openSettingsDrawer);
+settingsCloseButton?.addEventListener("click", closeSettingsDrawer);
+settingsOverlay?.addEventListener("click", closeSettingsDrawer);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && settingsDrawer?.classList.contains("is-open")) {
+    closeSettingsDrawer();
+  }
 });
 
 // Welcome 推荐卡片：事件委托，仅填充输入框，不自动发送
