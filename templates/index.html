@@ -8,85 +8,108 @@
   <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
 </head>
 <body>
-<div class="app">
-  <header>
+<!--
+  首页区域基线（UI-Slice 0）：
+  page
+  ├── #pageHeader        顶部：标题、导航、模型工具栏、全局状态
+  └── #chatMain          对话主区域
+      ├── #ollamaPanel   Ollama 管理/配置区（config/status/start/下载）
+      ├── #messages      对话消息流
+      └── #composerBar   输入区（Chat 表单）
+
+  约定：所有现有 DOM ID 是 JS 的稳定性契约，后续 UI 重构移动元素时必须保留。
+  未来 Settings Drawer 仅做结构占位（见下方注释），本阶段不实现。
+-->
+<div class="app" id="page">
+  <!-- 区域：header -->
+  <header id="pageHeader">
     <h1>Ollama Web Chat</h1>
-    <nav class="top-nav" aria-label="页面导航">
+    <nav class="top-nav" id="topNav" aria-label="页面导航">
       <a class="active" href="/">AI 对话</a>
       <a href="/platform">平台能力检测</a>
       <a href="/demo">平台能力演示</a>
     </nav>
-    <div class="toolbar">
+    <div class="toolbar" id="modelToolbar">
       <select id="modelSelect"><option value="">正在加载模型...</option></select>
       <button id="refreshModels" class="secondary" type="button">刷新模型</button>
       <button id="clearChat" class="secondary" type="button">清空对话</button>
     </div>
-    <span id="status">未连接</span>
+    <span id="status" role="status" aria-live="polite">未连接</span>
   </header>
-  <section class="ollama-panel" aria-labelledby="ollamaPanelTitle">
-    <div class="ollama-panel-heading">
-      <h2 id="ollamaPanelTitle">Ollama 服务</h2>
-      <span id="ollamaServiceStatus" class="ollama-status is-neutral" aria-live="polite">
-        <span class="ollama-status-dot" aria-hidden="true"></span>
-        <span id="ollamaStatusText">正在检测...</span>
-      </span>
-    </div>
-    <form id="ollamaConfigForm" class="ollama-config-form">
-      <label for="ollamaInstallDir">安装目录</label>
-      <div class="ollama-config-controls">
-        <input
-          id="ollamaInstallDir"
-          name="install_dir"
-          type="text"
-          placeholder="/home/lvi/ollama-server/bin"
-          autocomplete="off"
-        >
-        <button id="saveOllamaConfig" class="primary" type="submit">保存</button>
+
+  <!-- 区域：chat-main -->
+  <div class="chat-main" id="chatMain">
+    <!-- 子区域：Ollama 管理/配置 -->
+    <section class="ollama-panel" id="ollamaPanel" aria-labelledby="ollamaPanelTitle">
+      <div class="ollama-panel-heading" id="ollamaPanelHeading">
+        <h2 id="ollamaPanelTitle">Ollama 服务</h2>
+        <span id="ollamaServiceStatus" class="ollama-status is-neutral" aria-live="polite">
+          <span class="ollama-status-dot" aria-hidden="true"></span>
+          <span id="ollamaStatusText">正在检测...</span>
+        </span>
       </div>
-    </form>
-    <div class="ollama-details" aria-label="Ollama 服务详情">
-      <span>版本：<strong id="ollamaVersion">—</strong></span>
-      <span>服务状态：<strong id="ollamaServiceState">unknown</strong></span>
-    </div>
-    <div class="ollama-actions">
-      <button id="startOllama" class="primary" type="button" disabled>启动 Ollama</button>
-      <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
-    </div>
-    <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
-    <form id="modelPullForm" class="model-pull-form">
-      <label for="pullModelName">下载模型</label>
-      <div class="ollama-config-controls">
-        <input
-          id="pullModelName"
-          name="model"
-          type="text"
-          placeholder="deepseek-r1:1.5b"
-          autocomplete="off"
-        >
-        <button id="pullModelButton" class="primary" type="submit">下载</button>
+      <form id="ollamaConfigForm" class="ollama-config-form">
+        <label for="ollamaInstallDir">安装目录</label>
+        <div class="ollama-config-controls">
+          <input
+            id="ollamaInstallDir"
+            name="install_dir"
+            type="text"
+            placeholder="/home/lvi/ollama-server/bin"
+            autocomplete="off"
+          >
+          <button id="saveOllamaConfig" class="primary" type="submit">保存</button>
+        </div>
+      </form>
+      <div class="ollama-details" id="ollamaDetails" aria-label="Ollama 服务详情">
+        <span>版本：<strong id="ollamaVersion">—</strong></span>
+        <span>服务状态：<strong id="ollamaServiceState">unknown</strong></span>
       </div>
-    </form>
-    <div id="modelPullProgress" class="model-pull-progress" hidden>
-      <div class="model-pull-progress-row">
-        <span id="pullStatusText" role="status" aria-live="polite"></span>
-        <span id="pullProgressText"></span>
+      <div class="ollama-actions" id="ollamaActions">
+        <button id="startOllama" class="primary" type="button" disabled>启动 Ollama</button>
+        <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
       </div>
-      <div class="progress-bar">
-        <div id="pullProgressBarFill" class="progress-bar-fill"></div>
+      <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
+      <form id="modelPullForm" class="model-pull-form">
+        <label for="pullModelName">下载模型</label>
+        <div class="ollama-config-controls">
+          <input
+            id="pullModelName"
+            name="model"
+            type="text"
+            placeholder="deepseek-r1:1.5b"
+            autocomplete="off"
+          >
+          <button id="pullModelButton" class="primary" type="submit">下载</button>
+        </div>
+      </form>
+      <div id="modelPullProgress" class="model-pull-progress" hidden>
+        <div class="model-pull-progress-row">
+          <span id="pullStatusText" role="status" aria-live="polite"></span>
+          <span id="pullProgressText"></span>
+        </div>
+        <div class="progress-bar">
+          <div id="pullProgressBarFill" class="progress-bar-fill"></div>
+        </div>
       </div>
-    </div>
-  </section>
-  <main id="messages"></main>
-  <footer>
-    <form id="chatForm">
-      <div class="input-row">
-        <textarea id="prompt" placeholder="输入消息。Enter 发送，Shift+Enter 换行。" required></textarea>
-        <button id="sendButton" class="primary" type="submit">发送</button>
-        <button id="stopButton" class="danger" type="button" disabled>停止</button>
-      </div>
-      <div class="hint">对话记录保存在当前浏览器中，过长历史会自动裁剪后发送给 Ollama。</div>
-    </form>
-  </footer>
+      <!-- 占位：未来 Settings Drawer 挂载点，仅注释占位，不渲染任何元素 -->
+    </section>
+
+    <!-- 子区域：消息流 -->
+    <main id="messages"></main>
+
+    <!-- 子区域：输入区 -->
+    <footer id="composerBar">
+      <form id="chatForm">
+        <div class="input-row">
+          <textarea id="prompt" placeholder="输入消息。Enter 发送，Shift+Enter 换行。" required></textarea>
+          <button id="sendButton" class="primary" type="submit">发送</button>
+          <button id="stopButton" class="danger" type="button" disabled>停止</button>
+        </div>
+        <div class="hint">对话记录保存在当前浏览器中，过长历史会自动裁剪后发送给 Ollama。</div>
+      </form>
+    </footer>
+  </div>
 </div>
 </body>
 </html>

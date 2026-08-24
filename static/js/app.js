@@ -4,15 +4,19 @@ const DEFAULT_CONFIG = {
   maxHistoryChars: 24000,
 };
 
+// ============================================================
+// DOM 引用基线（UI-Slice 0）
+// 这些 ID 与 templates/index.html 一一对应，是后续 UI 重构的稳定性契约：
+// 移动元素时必须保留 ID，避免 selector 失效。所有元素均存在于页面中。
+// ============================================================
+
+// 区域：header（#pageHeader）
 const modelSelect = document.getElementById("modelSelect");
 const refreshModelsButton = document.getElementById("refreshModels");
 const clearChatButton = document.getElementById("clearChat");
-const chatForm = document.getElementById("chatForm");
-const promptInput = document.getElementById("prompt");
-const sendButton = document.getElementById("sendButton");
-const stopButton = document.getElementById("stopButton");
-const messagesContainer = document.getElementById("messages");
 const statusElement = document.getElementById("status");
+
+// 区域：chat-main / Ollama 管理/配置（#ollamaPanel）
 const ollamaConfigForm = document.getElementById("ollamaConfigForm");
 const ollamaInstallDirInput = document.getElementById("ollamaInstallDir");
 const saveOllamaConfigButton = document.getElementById("saveOllamaConfig");
@@ -23,6 +27,8 @@ const ollamaStatusTextElement = document.getElementById("ollamaStatusText");
 const ollamaVersionElement = document.getElementById("ollamaVersion");
 const ollamaServiceStateElement = document.getElementById("ollamaServiceState");
 const ollamaMessageElement = document.getElementById("ollamaMessage");
+
+// 区域：chat-main / 模型下载（#ollamaPanel 内）
 const modelPullForm = document.getElementById("modelPullForm");
 const pullModelNameInput = document.getElementById("pullModelName");
 const pullModelButton = document.getElementById("pullModelButton");
@@ -30,6 +36,15 @@ const modelPullProgressElement = document.getElementById("modelPullProgress");
 const pullStatusTextElement = document.getElementById("pullStatusText");
 const pullProgressTextElement = document.getElementById("pullProgressText");
 const pullProgressBarFill = document.getElementById("pullProgressBarFill");
+
+// 区域：chat-main / 输入区（#composerBar）
+const chatForm = document.getElementById("chatForm");
+const promptInput = document.getElementById("prompt");
+const sendButton = document.getElementById("sendButton");
+const stopButton = document.getElementById("stopButton");
+
+// 区域：chat-main / 消息流（#messages）
+const messagesContainer = document.getElementById("messages");
 
 let appConfig = { ...DEFAULT_CONFIG };
 let messages = loadMessages();
@@ -697,6 +712,11 @@ async function startModelPull() {
   if (succeeded) await finishPullSuccess(modelName);
 }
 
+// ============================================================
+// 事件绑定基线：脚本以 defer 方式加载并只执行一次，
+// 每个元素的事件在此处仅绑定一次，禁止在渲染函数中重复绑定。
+// ============================================================
+
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = promptInput.value.trim();
@@ -730,6 +750,7 @@ modelPullForm.addEventListener("submit", (event) => {
   startModelPull();
 });
 
+// 初始化入口：仅在脚本加载时执行一次
 renderMessages();
 loadConfig();
 loadModels();

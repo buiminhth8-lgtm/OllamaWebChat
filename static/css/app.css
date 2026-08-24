@@ -47,10 +47,16 @@ body {
   height: 100vh;
   margin: 0 auto;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr);
   background: var(--panel);
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
+}
+
+.chat-main {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
 }
 
 header {
