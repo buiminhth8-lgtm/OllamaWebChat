@@ -126,7 +126,7 @@ class OllamaServiceManagerTest(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertTrue(result["started"])
         subprocess_run.assert_called_once_with(
-            ["systemctl", "start", OLLAMA_SERVICE_NAME],
+            ["sudo", "-n", "systemctl", "start", OLLAMA_SERVICE_NAME],
             shell=False,
             capture_output=True,
             text=True,
@@ -134,6 +134,31 @@ class OllamaServiceManagerTest(unittest.TestCase):
             check=False,
         )
         wait_ready.assert_called_once_with()
+
+    def test_start_command_is_not_influenced_by_user_input(self):
+        hostile_config = {
+            "install_dir": "/tmp/x; reboot; rm -rf /",
+            "binary": "/opt/ollama/ollama --evil",
+            "valid": True,
+        }
+        manager = self.make_manager(config=hostile_config)
+        completed = subprocess.CompletedProcess([], 0, stdout="", stderr="")
+
+        with mock.patch.object(manager, "check_api", return_value=NOT_READY), mock.patch.object(
+            manager, "wait_until_ready", return_value=READY
+        ), mock.patch(
+            "ollama_service.subprocess.run", return_value=completed
+        ) as subprocess_run:
+            result = manager.start()
+
+        self.assertTrue(result["success"])
+        command = subprocess_run.call_args[0][0]
+        self.assertEqual(command[:2], ["sudo", "-n"])
+        self.assertEqual(command[2:4], ["systemctl", "start"])
+        self.assertEqual(command[4], OLLAMA_SERVICE_NAME)
+        self.assertEqual(len(command), 5)
+        self.assertFalse(subprocess_run.call_args[1]["shell"])
+        self.assertFalse(subprocess_run.call_args[1]["shell"])
 
     def test_start_returns_structured_systemctl_failure(self):
         manager = self.make_manager()

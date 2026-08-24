@@ -281,7 +281,46 @@ curl http://127.0.0.1:3000/api/platform/latest
 curl -N -X POST http://127.0.0.1:3000/api/platform/scan
 ```
 
-## 后台运行
+## 后台运行（生产部署，systemd）
+
+> 不再推荐 `nohup + 日志文件` 方式作为生产运行方案，仅适合临时手工调试。
+
+一键安装 systemd 服务：
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+./script/install_services.sh
+```
+
+自启动策略：
+
+```text
+ollama-webchat.service          Web 服务：enabled，开机自动启动
+ollama-webchat-ollama.service   Ollama：disabled，不开机启动，
+                                由网页“启动 Ollama”按钮按需调用 systemctl start 启动
+```
+
+验证命令：
+
+```bash
+systemctl status ollama-webchat.service
+systemctl status ollama-webchat-ollama.service
+
+journalctl -u ollama-webchat.service -f
+journalctl -u ollama-webchat-ollama.service -f
+```
+
+说明：
+
+- Ollama 安装目录继续使用网页中的运行时配置（数据保存在 `data/settings.json`），systemd 单元文件中不写死路径。
+- 安装脚本会在 `/etc/sudoers.d/ollama-webchat` 生成最小 sudoers 规则，仅授权部署用户执行
+  `sudo -n systemctl start ollama-webchat-ollama.service`，经 `visudo -cf` 校验后安装。
+- 脚本可重复执行（幂等），失败时立即报错退出。
+
+## 手工运行（开发/调试用）
 
 ```bash
 nohup env OLLAMA_BASE_URL=http://127.0.0.1:11434 python3 app.py > ollama-web-chat.log 2>&1 &

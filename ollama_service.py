@@ -250,7 +250,9 @@ class OllamaServiceManager:
         }
 
     def _start_systemd_service(self) -> Dict[str, object]:
-        command = ["systemctl", "start", OLLAMA_SERVICE_NAME]
+        # 固定命令：仅允许通过最小 sudoers 权限启动指定 service，
+        # 任何用户输入都不会进入该命令。
+        command = ["sudo", "-n", "systemctl", "start", OLLAMA_SERVICE_NAME]
         try:
             result = subprocess.run(
                 command,

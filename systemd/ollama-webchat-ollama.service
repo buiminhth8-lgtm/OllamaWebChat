@@ -1,0 +1,12 @@
+[Unit]
+Description=Ollama server for Ollama Web Chat (on-demand, not enabled at boot)
+After=network.target
+
+[Service]
+Type=simple
+User=@DEPLOY_USER@
+WorkingDirectory=@PROJECT_DIR@
+ExecStart=@VENV_PYTHON@ @PROJECT_DIR@/ollama_runner.py
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=3

@@ -1,0 +1,15 @@
+[Unit]
+Description=Ollama Web Chat web service
+After=network.target
+
+[Service]
+Type=simple
+User=@DEPLOY_USER@
+WorkingDirectory=@PROJECT_DIR@
+ExecStart=@VENV_PYTHON@ @PROJECT_DIR@/app.py
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
