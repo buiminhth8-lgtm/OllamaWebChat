@@ -65,6 +65,9 @@ sudo install -m 440 -o root -g root "$SUDOERS_FILE" /etc/sudoers.d/ollama-webcha
 echo "==> 重载 systemd 配置"
 sudo systemctl daemon-reload
 
+echo "==> 确保 Ollama 服务保持按需启动（不设为开机自启）"
+sudo systemctl disable "$OLLAMA_UNIT"
+
 echo "==> 启用并启动 Web 服务（开机自启）"
 sudo systemctl enable --now "$WEB_UNIT"
 

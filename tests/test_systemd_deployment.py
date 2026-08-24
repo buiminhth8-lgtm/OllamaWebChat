@@ -88,6 +88,13 @@ class InstallScriptTest(unittest.TestCase):
         enable_index = self.script.rindex("enable --now")
         self.assertLess(reload_index, enable_index)
 
+    def test_explicitly_disables_ollama_before_enabling_web(self):
+        disable_command = 'sudo systemctl disable "$OLLAMA_UNIT"'
+        self.assertIn(disable_command, self.script)
+        disable_index = self.script.index(disable_command)
+        enable_index = self.script.rindex("enable --now")
+        self.assertLess(disable_index, enable_index)
+
     def test_sudoers_grants_only_fixed_start_command(self):
         sudoers_line = re.search(
             r"printf '%s ALL=\(root\) NOPASSWD: %s start %s\\n'", self.script
