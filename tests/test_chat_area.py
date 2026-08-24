@@ -33,19 +33,22 @@ class ChatAreaTest(unittest.TestCase):
         for label in labels:
             self.assertIn(label, self.html)
 
-    def test_main_chat_removes_ollama_management_but_keeps_model_pull(self):
+    def test_main_chat_removes_ollama_management_and_model_pull(self):
         main_markup = self.html[: self.html.index('id="settingsOverlay"')]
         self.assertNotIn('id="ollamaPanel"', main_markup)
-        for management_id in (
+        for drawer_only_id in (
             "ollamaConfigForm",
             "ollamaInstallDir",
             "saveOllamaConfig",
             "startOllama",
             "refreshOllamaStatus",
+            "modelPullPanel",
+            "modelPullForm",
+            "pullModelName",
+            "pullModelButton",
+            "modelPullProgress",
         ):
-            self.assertNotIn(f'id="{management_id}"', main_markup)
-        for pull_id in ("modelPullPanel", "modelPullForm", "pullModelName", "pullModelButton"):
-            self.assertIn(f'id="{pull_id}"', main_markup)
+            self.assertNotIn(f'id="{drawer_only_id}"', main_markup)
 
     def test_messages_container_contains_welcome(self):
         messages_match = re.search(r'<main id="messages">(.*?)</main>', self.html, re.DOTALL)

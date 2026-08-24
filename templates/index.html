@@ -13,12 +13,11 @@
   page
   ├── #pageHeader        顶部：标题、导航、模型工具栏、全局状态
   └── #chatMain          对话主区域
-      ├── #ollamaPanel   Ollama 管理/配置区（config/status/start/下载）
       ├── #messages      对话消息流
       └── #composerBar   输入区（Chat 表单）
 
   约定：所有现有 DOM ID 是 JS 的稳定性契约，后续 UI 重构移动元素时必须保留。
-  Ollama 配置、状态和启动已迁移到 Settings Drawer；模型下载暂留主区域。
+  Ollama 管理与模型下载均位于 Settings Drawer，主页仅保留 Chat 与模型选择。
 -->
 <div class="app" id="page">
   <!-- 区域：header（UI-Slice 1：精简导航，仅 Logo/主导航/模型选择/设置入口） -->
@@ -51,33 +50,6 @@
 
   <!-- 区域：chat-main -->
   <div class="chat-main" id="chatMain">
-    <!-- UI-Slice 5：模型下载仍暂留主区域，UI-Slice 6 再迁入 Drawer。 -->
-    <section class="model-pull-panel" id="modelPullPanel" aria-labelledby="modelPullPanelTitle">
-      <h2 id="modelPullPanelTitle">模型下载</h2>
-      <form id="modelPullForm" class="model-pull-form">
-        <label for="pullModelName">模型名称</label>
-        <div class="ollama-config-controls">
-          <input
-            id="pullModelName"
-            name="model"
-            type="text"
-            placeholder="deepseek-r1:1.5b"
-            autocomplete="off"
-          >
-          <button id="pullModelButton" class="primary" type="submit">下载</button>
-        </div>
-      </form>
-      <div id="modelPullProgress" class="model-pull-progress" hidden>
-        <div class="model-pull-progress-row">
-          <span id="pullStatusText" role="status" aria-live="polite"></span>
-          <span id="pullProgressText"></span>
-        </div>
-        <div class="progress-bar">
-          <div id="pullProgressBarFill" class="progress-bar-fill"></div>
-        </div>
-      </div>
-    </section>
-
     <!-- 子区域：消息流（含 Welcome 空状态） -->
     <main id="messages">
       <div id="chatWelcome" class="chat-welcome">
@@ -126,7 +98,7 @@
   </div>
 </div>
 
-<!-- UI-Slice 5：Ollama 管理位于 Drawer；模型下载仍在主区域。 -->
+<!-- UI-Slice 6：Ollama 管理与模型下载均位于 Drawer。 -->
 <div id="settingsOverlay" class="settings-overlay" aria-hidden="true"></div>
 <aside
   id="settingsDrawer"
@@ -183,9 +155,35 @@
       </div>
       <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
     </section>
-    <section class="settings-section" aria-labelledby="settingsModelsHeading">
+    <section
+      class="settings-section settings-model-section"
+      id="modelPullPanel"
+      aria-labelledby="settingsModelsHeading"
+    >
       <h3 id="settingsModelsHeading">模型管理</h3>
-      <p>模型下载将在 UI-Slice 6 迁移到这里。</p>
+      <form id="modelPullForm" class="model-pull-form">
+        <label for="pullModelName">下载模型</label>
+        <div class="ollama-config-controls">
+          <input
+            id="pullModelName"
+            name="model"
+            type="text"
+            placeholder="deepseek-r1:1.5b"
+            autocomplete="off"
+          >
+          <button id="pullModelButton" class="primary" type="submit">下载</button>
+        </div>
+      </form>
+      <div id="modelPullProgress" class="model-pull-progress" hidden>
+        <span class="model-pull-status-label">下载状态</span>
+        <div class="model-pull-progress-row">
+          <span id="pullStatusText" role="status" aria-live="polite"></span>
+          <span id="pullProgressText"></span>
+        </div>
+        <div class="progress-bar" role="presentation">
+          <div id="pullProgressBarFill" class="progress-bar-fill"></div>
+        </div>
+      </div>
     </section>
     <section class="settings-section" aria-labelledby="settingsRuntimeHeading">
       <h3 id="settingsRuntimeHeading">运行信息</h3>

@@ -31,7 +31,7 @@ class SettingsDrawerTest(unittest.TestCase):
         self.assertIn('aria-controls="settingsDrawer"', self.html)
         self.assertIn('aria-expanded="false"', self.html)
 
-    def test_drawer_contains_ollama_management_without_model_pull(self):
+    def test_drawer_contains_ollama_management_and_model_pull(self):
         drawer = re.search(
             r'<aside[^>]*id="settingsDrawer"[^>]*>(.*?)</aside>',
             self.html,
@@ -54,8 +54,10 @@ class SettingsDrawerTest(unittest.TestCase):
             self.assertIn(f'id="{management_id}"', markup)
             self.assertEqual(self.html.count(f'id="{management_id}"'), 1)
         for pull_id in ("modelPullForm", "pullModelName", "pullModelButton", "modelPullProgress"):
-            self.assertNotIn(f'id="{pull_id}"', markup)
+            self.assertIn(f'id="{pull_id}"', markup)
             self.assertEqual(self.html.count(f'id="{pull_id}"'), 1)
+        self.assertIn('id="modelPullPanel"', markup)
+        self.assertIn("下载状态", markup)
 
     def test_page_has_no_duplicate_dom_ids(self):
         ids = re.findall(r'\sid="([^"]+)"', self.html)
@@ -90,6 +92,20 @@ class SettingsDrawerTest(unittest.TestCase):
             self.javascript.count('settingsOverlay?.addEventListener("click", closeSettingsDrawer)'),
             1,
         )
+        self.assertEqual(
+            self.javascript.count('modelPullForm.addEventListener("submit"'),
+            1,
+        )
+
+    def test_model_pull_keeps_stream_buffering_and_model_refresh(self):
+        self.assertIn('const decoder = new TextDecoder("utf-8")', self.javascript)
+        self.assertIn('buffer += decoder.decode(value, { stream: true })', self.javascript)
+        self.assertIn('const lines = buffer.split("\\n")', self.javascript)
+        self.assertIn('buffer = lines.pop() || ""', self.javascript)
+        self.assertIn('if (buffer.trim())', self.javascript)
+        self.assertIn('await loadModels(modelName)', self.javascript)
+        self.assertIn('total > 0', self.javascript)
+        self.assertIn('pullProgressBarFill.classList.add("indeterminate")', self.javascript)
 
     def test_drawer_uses_transform_animation_and_full_width_mobile_layout(self):
         self.assertRegex(self.stylesheet, r"\.settings-drawer\s*\{[^}]*transform:\s*translateX\(100%\)")

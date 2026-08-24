@@ -33,7 +33,7 @@ const ollamaVersionElement = document.getElementById("ollamaVersion");
 const ollamaServiceStateElement = document.getElementById("ollamaServiceState");
 const ollamaMessageElement = document.getElementById("ollamaMessage");
 
-// 区域：chat-main / 模型下载（UI-Slice 6 前暂留主区域）
+// 区域：Settings Drawer / 模型下载
 const modelPullForm = document.getElementById("modelPullForm");
 const pullModelNameInput = document.getElementById("pullModelName");
 const pullModelButton = document.getElementById("pullModelButton");
@@ -651,7 +651,7 @@ function renderPullEvent(event) {
 async function finishPullSuccess(modelName) {
   pullUiState.phase = "success";
   setPullControlsDisabled(false);
-  pullStatusTextElement.textContent = "success";
+  pullStatusTextElement.textContent = "下载成功";
   pullStatusTextElement.classList.add("is-success");
   try {
     await loadModels(modelName);

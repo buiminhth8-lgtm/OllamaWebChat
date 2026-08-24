@@ -241,18 +241,6 @@ header select {
   color: var(--nav-text);
 }
 
-.model-pull-panel {
-  padding: 10px 16px 12px;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--panel) 94%, var(--primary) 4%);
-}
-
-.model-pull-panel h2 {
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .ollama-status {
   display: inline-flex;
   align-items: center;
@@ -859,6 +847,38 @@ body.settings-drawer-open {
 
 .settings-ollama-section .ollama-message.error {
   color: #f87171;
+}
+
+.settings-model-section .model-pull-form {
+  margin-top: 14px;
+}
+
+.settings-model-section .model-pull-form label,
+.settings-model-section .model-pull-status-label {
+  color: #cbd5e1;
+}
+
+.settings-model-section input {
+  background: rgba(15, 23, 42, .7);
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, .3);
+}
+
+.settings-model-section input::placeholder {
+  color: #64748b;
+}
+
+.settings-model-section .model-pull-progress {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .2);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, .6);
+}
+
+.model-pull-status-label {
+  font-size: 12px;
+  font-weight: 700;
 }
 
 @media (max-width: 1100px) {
