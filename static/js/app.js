@@ -23,6 +23,13 @@ const ollamaStatusTextElement = document.getElementById("ollamaStatusText");
 const ollamaVersionElement = document.getElementById("ollamaVersion");
 const ollamaServiceStateElement = document.getElementById("ollamaServiceState");
 const ollamaMessageElement = document.getElementById("ollamaMessage");
+const modelPullForm = document.getElementById("modelPullForm");
+const pullModelNameInput = document.getElementById("pullModelName");
+const pullModelButton = document.getElementById("pullModelButton");
+const modelPullProgressElement = document.getElementById("modelPullProgress");
+const pullStatusTextElement = document.getElementById("pullStatusText");
+const pullProgressTextElement = document.getElementById("pullProgressText");
+const pullProgressBarFill = document.getElementById("pullProgressBarFill");
 
 let appConfig = { ...DEFAULT_CONFIG };
 let messages = loadMessages();
@@ -35,6 +42,9 @@ const ollamaUiState = {
   starting: false,
   refreshing: false,
   requestFailed: false,
+};
+const pullUiState = {
+  phase: "idle", // idle | downloading | success | error
 };
 
 function getApiErrorMessage(payload, fallback) {
@@ -385,12 +395,13 @@ async function loadConfig() {
   }
 }
 
-async function loadModels() {
+async function loadModels(preferredModel = "") {
   setStatus("正在连接 Ollama...");
   try {
     const result = await requestJson("/api/models");
 
-    const current = modelSelect.value || localStorage.getItem("ollama_web_chat_model") || "";
+    const current =
+      preferredModel || modelSelect.value || localStorage.getItem("ollama_web_chat_model") || "";
     modelSelect.innerHTML = "";
     const models = result.models || [];
 
@@ -408,9 +419,15 @@ async function loadModels() {
       }
       if (models.some((model) => model.name === current)) {
         modelSelect.value = current;
+      } else if (preferredModel) {
+        // Ollama 实际模型名可能带 tag，精确匹配失败时按基础名匹配
+        const baseName = preferredModel.split(":")[0];
+        const fuzzy = models.find((model) => (model.name || "").split(":")[0] === baseName);
+        if (fuzzy) modelSelect.value = fuzzy.name;
       }
     }
 
+    localStorage.setItem("ollama_web_chat_model", modelSelect.value || "");
     setStatus(`已连接，共 ${models.length} 个模型`);
   } catch (error) {
     modelSelect.innerHTML = '<option value="">连接失败</option>';
@@ -520,6 +537,166 @@ async function sendMessage(text) {
   }
 }
 
+function formatBytes(bytes) {
+  const value = Number(bytes);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(2)} GB`;
+  if (value >= 1024 ** 2) return `${(value / 1024 ** 2).toFixed(1)} MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${Math.round(value)} B`;
+}
+
+function setPullControlsDisabled(disabled) {
+  pullModelButton.disabled = disabled;
+  pullModelNameInput.disabled = disabled;
+  pullModelButton.textContent = disabled ? "下载中..." : "下载";
+}
+
+function resetPullProgress() {
+  pullStatusTextElement.textContent = "";
+  pullStatusTextElement.classList.remove("is-error", "is-success");
+  pullProgressTextElement.textContent = "";
+  pullProgressBarFill.style.width = "0%";
+  pullProgressBarFill.classList.remove("indeterminate");
+}
+
+function renderPullEvent(event) {
+  const status = typeof event?.status === "string" ? event.status : "";
+  pullStatusTextElement.textContent = status || "下载中...";
+  pullStatusTextElement.classList.remove("is-error", "is-success");
+
+  const completed = Number(event?.completed);
+  const total = Number(event?.total);
+  const hasProgress =
+    status === "downloading" &&
+    Number.isFinite(completed) &&
+    completed >= 0 &&
+    Number.isFinite(total) &&
+    total > 0;
+
+  if (hasProgress) {
+    const percent = Math.min(100, Math.round((completed / total) * 100));
+    pullProgressBarFill.classList.remove("indeterminate");
+    pullProgressBarFill.style.width = `${percent}%`;
+    pullProgressTextElement.textContent = `${percent}% · ${formatBytes(completed) || "0 B"} / ${formatBytes(total)}`;
+  } else if (status === "success") {
+    pullProgressBarFill.classList.remove("indeterminate");
+    pullProgressBarFill.style.width = "100%";
+    pullProgressTextElement.textContent = "";
+  } else {
+    // 没有 total 或非 downloading 状态：不确定进度
+    pullProgressBarFill.classList.add("indeterminate");
+    pullProgressTextElement.textContent = "";
+  }
+}
+
+async function finishPullSuccess(modelName) {
+  pullUiState.phase = "success";
+  setPullControlsDisabled(false);
+  pullStatusTextElement.textContent = "success";
+  pullStatusTextElement.classList.add("is-success");
+  try {
+    await loadModels(modelName);
+  } catch {
+    // 刷新模型列表失败不影响页面正常使用
+  }
+}
+
+function handlePullLine(line) {
+  let event;
+  try {
+    event = JSON.parse(line);
+  } catch {
+    throw new Error("模型下载数据格式异常");
+  }
+  if (!event || typeof event !== "object") {
+    throw new Error("模型下载数据格式异常");
+  }
+  if (event.error !== undefined) {
+    throw new Error(getApiErrorMessage(event, "模型下载失败"));
+  }
+  renderPullEvent(event);
+  return event.status === "success";
+}
+
+async function startModelPull() {
+  if (pullUiState.phase === "downloading") return;
+
+  const modelName = pullModelNameInput.value.trim();
+  if (!modelName) {
+    resetPullProgress();
+    modelPullProgressElement.hidden = false;
+    pullStatusTextElement.textContent = "请输入模型名，例如 deepseek-r1:1.5b";
+    pullStatusTextElement.classList.add("is-error");
+    return;
+  }
+
+  pullUiState.phase = "downloading";
+  setPullControlsDisabled(true);
+  modelPullProgressElement.hidden = false;
+  resetPullProgress();
+  pullStatusTextElement.textContent = "准备下载...";
+
+  let succeeded = false;
+  try {
+    const response = await fetch("/api/ollama/pull", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: modelName }),
+    });
+
+    if (!response.ok) {
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch {
+        // 响应体不是 JSON 时使用默认错误信息
+      }
+      throw new Error(getApiErrorMessage(payload, `请求失败：HTTP ${response.status}`));
+    }
+    if (!response.body) throw new Error("浏览器不支持流式响应");
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    let sawSuccess = false;
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        if (handlePullLine(line)) sawSuccess = true;
+      }
+    }
+
+    if (buffer.trim()) {
+      if (handlePullLine(buffer)) sawSuccess = true;
+    }
+
+    if (!sawSuccess) throw new Error("连接中断，模型下载未完成");
+    succeeded = true;
+  } catch (error) {
+    const message = error instanceof TypeError ? "网络连接失败，请检查网络后重试" : error.message;
+    pullUiState.phase = "error";
+    pullStatusTextElement.textContent = message;
+    pullStatusTextElement.classList.add("is-error");
+    pullProgressBarFill.classList.remove("indeterminate");
+  } finally {
+    if (!succeeded) {
+      pullUiState.phase = pullUiState.phase === "downloading" ? "error" : pullUiState.phase;
+      setPullControlsDisabled(false);
+    }
+  }
+
+  if (succeeded) await finishPullSuccess(modelName);
+}
+
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = promptInput.value.trim();
@@ -548,6 +725,10 @@ clearChatButton.addEventListener("click", () => {
 ollamaConfigForm.addEventListener("submit", saveOllamaConfig);
 startOllamaButton.addEventListener("click", startOllama);
 refreshOllamaStatusButton.addEventListener("click", refreshOllamaStatus);
+modelPullForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  startModelPull();
+});
 
 renderMessages();
 loadConfig();

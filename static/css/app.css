@@ -259,6 +259,79 @@ button:disabled {
   color: var(--danger);
 }
 
+.model-pull-form {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.model-pull-form label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.model-pull-progress {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.model-pull-progress[hidden] {
+  display: none;
+}
+
+.model-pull-progress-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+#pullStatusText.is-error {
+  color: var(--danger);
+}
+
+#pullStatusText.is-success {
+  color: var(--success);
+}
+
+.progress-bar {
+  height: 8px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--border) 55%, transparent);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}
+
+.progress-bar-fill.indeterminate {
+  width: 30% !important;
+  animation: pull-indeterminate 1.2s linear infinite;
+}
+
+@keyframes pull-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
 #messages {
   overflow-y: auto;
   padding: 20px 16px 36px;

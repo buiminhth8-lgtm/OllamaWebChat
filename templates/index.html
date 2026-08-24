@@ -53,6 +53,28 @@
       <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
     </div>
     <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
+    <form id="modelPullForm" class="model-pull-form">
+      <label for="pullModelName">下载模型</label>
+      <div class="ollama-config-controls">
+        <input
+          id="pullModelName"
+          name="model"
+          type="text"
+          placeholder="deepseek-r1:1.5b"
+          autocomplete="off"
+        >
+        <button id="pullModelButton" class="primary" type="submit">下载</button>
+      </div>
+    </form>
+    <div id="modelPullProgress" class="model-pull-progress" hidden>
+      <div class="model-pull-progress-row">
+        <span id="pullStatusText" role="status" aria-live="polite"></span>
+        <span id="pullProgressText"></span>
+      </div>
+      <div class="progress-bar">
+        <div id="pullProgressBarFill" class="progress-bar-fill"></div>
+      </div>
+    </div>
   </section>
   <main id="messages"></main>
   <footer>
