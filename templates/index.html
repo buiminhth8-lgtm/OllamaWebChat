@@ -50,64 +50,89 @@
 
   <!-- 区域：chat-main -->
   <div class="chat-main" id="chatMain">
-    <!-- 子区域：Ollama 管理/配置 -->
-    <section class="ollama-panel" id="ollamaPanel" aria-labelledby="ollamaPanelTitle">
-      <div class="ollama-panel-heading" id="ollamaPanelHeading">
+    <!--
+      子区域：Ollama 管理/配置（UI-Slice 2 起改为默认折叠的兼容容器）
+      所有业务 DOM 与 ID 原样保留，供 UI-Slice 4~6 迁移到 Settings Drawer。
+    -->
+    <details class="ollama-panel" id="ollamaPanel">
+      <summary class="ollama-panel-summary" id="ollamaPanelSummary">
         <h2 id="ollamaPanelTitle">Ollama 服务</h2>
         <span id="ollamaServiceStatus" class="ollama-status is-neutral" aria-live="polite">
           <span class="ollama-status-dot" aria-hidden="true"></span>
           <span id="ollamaStatusText">正在检测...</span>
         </span>
-      </div>
-      <form id="ollamaConfigForm" class="ollama-config-form">
-        <label for="ollamaInstallDir">安装目录</label>
-        <div class="ollama-config-controls">
-          <input
-            id="ollamaInstallDir"
-            name="install_dir"
-            type="text"
-            placeholder="/home/lvi/ollama-server/bin"
-            autocomplete="off"
-          >
-          <button id="saveOllamaConfig" class="primary" type="submit">保存</button>
+      </summary>
+      <div class="ollama-panel-body">
+        <form id="ollamaConfigForm" class="ollama-config-form">
+          <label for="ollamaInstallDir">安装目录</label>
+          <div class="ollama-config-controls">
+            <input
+              id="ollamaInstallDir"
+              name="install_dir"
+              type="text"
+              placeholder="/home/lvi/ollama-server/bin"
+              autocomplete="off"
+            >
+            <button id="saveOllamaConfig" class="primary" type="submit">保存</button>
+          </div>
+        </form>
+        <div class="ollama-details" id="ollamaDetails" aria-label="Ollama 服务详情">
+          <span>版本：<strong id="ollamaVersion">—</strong></span>
+          <span>服务状态：<strong id="ollamaServiceState">unknown</strong></span>
         </div>
-      </form>
-      <div class="ollama-details" id="ollamaDetails" aria-label="Ollama 服务详情">
-        <span>版本：<strong id="ollamaVersion">—</strong></span>
-        <span>服务状态：<strong id="ollamaServiceState">unknown</strong></span>
-      </div>
-      <div class="ollama-actions" id="ollamaActions">
-        <button id="startOllama" class="primary" type="button" disabled>启动 Ollama</button>
-        <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
-      </div>
-      <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
-      <form id="modelPullForm" class="model-pull-form">
-        <label for="pullModelName">下载模型</label>
-        <div class="ollama-config-controls">
-          <input
-            id="pullModelName"
-            name="model"
-            type="text"
-            placeholder="deepseek-r1:1.5b"
-            autocomplete="off"
-          >
-          <button id="pullModelButton" class="primary" type="submit">下载</button>
+        <div class="ollama-actions" id="ollamaActions">
+          <button id="startOllama" class="primary" type="button" disabled>启动 Ollama</button>
+          <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
         </div>
-      </form>
-      <div id="modelPullProgress" class="model-pull-progress" hidden>
-        <div class="model-pull-progress-row">
-          <span id="pullStatusText" role="status" aria-live="polite"></span>
-          <span id="pullProgressText"></span>
-        </div>
-        <div class="progress-bar">
-          <div id="pullProgressBarFill" class="progress-bar-fill"></div>
+        <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
+        <form id="modelPullForm" class="model-pull-form">
+          <label for="pullModelName">下载模型</label>
+          <div class="ollama-config-controls">
+            <input
+              id="pullModelName"
+              name="model"
+              type="text"
+              placeholder="deepseek-r1:1.5b"
+              autocomplete="off"
+            >
+            <button id="pullModelButton" class="primary" type="submit">下载</button>
+          </div>
+        </form>
+        <div id="modelPullProgress" class="model-pull-progress" hidden>
+          <div class="model-pull-progress-row">
+            <span id="pullStatusText" role="status" aria-live="polite"></span>
+            <span id="pullProgressText"></span>
+          </div>
+          <div class="progress-bar">
+            <div id="pullProgressBarFill" class="progress-bar-fill"></div>
+          </div>
         </div>
       </div>
       <!-- 占位：未来 Settings Drawer 挂载点，仅注释占位，不渲染任何元素 -->
-    </section>
+    </details>
 
-    <!-- 子区域：消息流 -->
-    <main id="messages"></main>
+    <!-- 子区域：消息流（含 Welcome 空状态） -->
+    <main id="messages">
+      <div id="chatWelcome" class="chat-welcome">
+        <div class="welcome-logo" aria-hidden="true"></div>
+        <h2>你好，我是 Ollama</h2>
+        <p>本地大模型助手，隐私、快速、可定制。</p>
+        <div class="welcome-cards" id="welcomeCards">
+          <button type="button" class="welcome-card" data-prompt="帮我解释一下量子计算的基本原理，并举例说明它的应用场景。">
+            <strong>知识问答</strong>
+            <span>询问各类知识问题，获取准确回答</span>
+          </button>
+          <button type="button" class="welcome-card" data-prompt="请帮我编写一个 Python 函数，判断一个字符串是否是回文，并逐行解释代码。">
+            <strong>代码助手</strong>
+            <span>编写、解释和优化各类代码</span>
+          </button>
+          <button type="button" class="welcome-card" data-prompt="以“未来的城市”为主题，写一篇 300 字左右的短文。">
+            <strong>创作助手</strong>
+            <span>撰写文章、故事、文案与创意内容</span>
+          </button>
+        </div>
+      </div>
+    </main>
 
     <!-- 子区域：输入区 -->
     <footer id="composerBar">

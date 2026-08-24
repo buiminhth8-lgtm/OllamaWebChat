@@ -45,6 +45,8 @@ const stopButton = document.getElementById("stopButton");
 
 // 区域：chat-main / 消息流（#messages）
 const messagesContainer = document.getElementById("messages");
+const chatWelcomeElement = document.getElementById("chatWelcome");
+const welcomeCardsElement = document.getElementById("welcomeCards");
 
 let appConfig = { ...DEFAULT_CONFIG };
 let messages = loadMessages();
@@ -377,12 +379,19 @@ function appendMessageElement(role, content = "", thinking = "") {
   return { wrapper, parts };
 }
 
+function updateChatEmptyState() {
+  chatWelcomeElement.hidden = messages.length > 0;
+}
+
 function renderMessages() {
   messages = compactMessages(messages);
-  messagesContainer.innerHTML = "";
+  for (const child of Array.from(messagesContainer.children)) {
+    if (child.id !== "chatWelcome") child.remove();
+  }
   for (const message of messages) {
     appendMessageElement(message.role, message.content, message.thinking);
   }
+  updateChatEmptyState();
   scrollToBottom();
 }
 
@@ -745,6 +754,14 @@ clearChatButton.addEventListener("click", clearConversation);
 // Settings 入口：UI-Slice 1 仅保留占位，Drawer 在 UI-Slice 4 实现
 settingsButton.addEventListener("click", () => {
   setStatus("设置功能即将上线");
+});
+
+// Welcome 推荐卡片：事件委托，仅填充输入框，不自动发送
+welcomeCardsElement.addEventListener("click", (event) => {
+  const card = event.target.closest(".welcome-card");
+  if (!card) return;
+  promptInput.value = card.dataset.prompt || "";
+  promptInput.focus();
 });
 ollamaConfigForm.addEventListener("submit", saveOllamaConfig);
 startOllamaButton.addEventListener("click", startOllama);
