@@ -2,7 +2,7 @@ import json
 from typing import Dict, Iterator, List, Union
 
 import requests
-from flask import Blueprint, Response, jsonify, render_template, request
+from flask import Blueprint, Response, current_app, jsonify, render_template, request
 
 from config import (
     MAX_HISTORY_CHARS,
@@ -16,6 +16,15 @@ bp = Blueprint("main", __name__)
 
 VALID_ROLES = {"system", "user", "assistant"}
 TRIM_PREFIX = "[已裁剪前文]\n"
+OLLAMA_START_ERROR_MESSAGES = {
+    "invalid_config": "Ollama 安装路径未配置或无效",
+    "command_not_found": "systemctl 不可用",
+    "permission_denied": "没有权限启动 Ollama 服务",
+    "systemctl_timeout": "启动 Ollama systemd 服务超时",
+    "systemctl_failed": "Ollama systemd 服务启动失败",
+    "systemctl_error": "无法调用 systemd 服务管理器",
+    "ready_timeout": "Ollama 服务启动后未能及时就绪",
+}
 
 
 def trim_text(text: str, limit: int = MAX_MESSAGE_CHARS) -> str:
@@ -84,6 +93,76 @@ def frontend_config():
             "max_history_chars": MAX_HISTORY_CHARS,
         }
     )
+
+
+@bp.get("/api/ollama/status")
+def ollama_status():
+    try:
+        status = current_app.extensions["ollama_service"].get_status()
+    except Exception:
+        current_app.logger.error("Failed to get Ollama service status")
+        return jsonify(
+            {
+                "error": "service_manager_error",
+                "message": "无法获取 Ollama 服务状态",
+            }
+        ), 500
+
+    return jsonify(status)
+
+
+@bp.post("/api/ollama/start")
+def ollama_start():
+    try:
+        result = current_app.extensions["ollama_service"].start()
+    except Exception:
+        current_app.logger.error("Failed to start Ollama service")
+        return jsonify(
+            {
+                "ok": False,
+                "started": False,
+                "error": "service_manager_error",
+                "message": "Ollama 服务启动失败",
+            }
+        ), 500
+
+    if result.get("success"):
+        started = bool(result.get("started"))
+        status = {
+            "ready": bool(result.get("ready")),
+            "version": result.get("version"),
+        }
+        if started:
+            status["running"] = True
+        return jsonify(
+            {
+                "ok": True,
+                "started": started,
+                "message": "Ollama started" if started else "Ollama already running",
+                "status": status,
+            }
+        )
+
+    error = result.get("error")
+    if isinstance(error, dict):
+        error_code = str(error.get("code") or "start_failed")
+    else:
+        error_code = "start_failed"
+    message = OLLAMA_START_ERROR_MESSAGES.get(error_code, "Ollama 服务启动失败")
+
+    status_code = 400 if error_code == "invalid_config" else 500
+    return jsonify(
+        {
+            "ok": False,
+            "started": bool(result.get("started")),
+            "error": error_code,
+            "message": message,
+            "status": {
+                "ready": bool(result.get("ready")),
+                "version": result.get("version"),
+            },
+        }
+    ), status_code
 
 
 @bp.get("/api/models")
