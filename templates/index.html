@@ -32,7 +32,9 @@
       <a href="/demo">平台能力演示</a>
     </nav>
     <div class="toolbar" id="modelToolbar">
-      <select id="modelSelect"><option value="">正在加载模型...</option></select>
+      <select id="modelSelect" aria-label="选择模型" title="选择模型">
+        <option value="">正在加载模型...</option>
+      </select>
       <button
         id="settingsButton"
         class="icon-button"
@@ -184,10 +186,6 @@
           <div id="pullProgressBarFill" class="progress-bar-fill"></div>
         </div>
       </div>
-    </section>
-    <section class="settings-section" aria-labelledby="settingsRuntimeHeading">
-      <h3 id="settingsRuntimeHeading">运行信息</h3>
-      <p>运行信息将在后续界面迁移中放置于此。</p>
     </section>
   </div>
 </aside>

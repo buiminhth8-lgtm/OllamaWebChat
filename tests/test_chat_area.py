@@ -86,6 +86,22 @@ class ChatAreaTest(unittest.TestCase):
         self.assertRegex(self.stylesheet, r"\.composer textarea\s*\{[^}]*resize:\s*none")
         self.assertRegex(self.stylesheet, r"#messages\s*\{[^}]*padding:\s*20px 16px 48px")
 
+    def test_chat_layout_and_messages_are_overflow_safe(self):
+        self.assertRegex(
+            self.stylesheet,
+            r"\.chat-main\s*\{[^}]*grid-template-rows:\s*minmax\(0, 1fr\) auto",
+        )
+        self.assertRegex(self.stylesheet, r"\.app\s*\{[^}]*height:\s*100dvh")
+        self.assertRegex(self.stylesheet, r"\.message\s*\{[^}]*overflow-wrap:\s*anywhere")
+        self.assertRegex(self.stylesheet, r"\.message\s*\{[^}]*word-break:\s*break-word")
+
+    def test_mobile_welcome_and_header_use_bounded_grids(self):
+        mobile_start = self.stylesheet.index("@media (max-width: 767px)")
+        mobile_end = self.stylesheet.index("@media (max-width: 640px)", mobile_start)
+        mobile = self.stylesheet[mobile_start:mobile_end]
+        self.assertIn("#pageHeader", mobile)
+        self.assertRegex(mobile, r"\.welcome-cards\s*\{[^}]*grid-template-columns:\s*1fr")
+
 
 if __name__ == "__main__":
     unittest.main()

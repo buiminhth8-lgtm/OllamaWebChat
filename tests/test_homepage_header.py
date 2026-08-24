@@ -59,7 +59,10 @@ class HomepageHeaderTest(unittest.TestCase):
         self.assertEqual(html.count('id="clearChat"'), 1)
 
     def test_model_select_still_present(self):
-        self.assertIn('id="modelSelect"', self.get_header_html())
+        header = self.get_header_html()
+        self.assertIn('id="modelSelect"', header)
+        self.assertIn('aria-label="选择模型"', header)
+        self.assertIn('title="选择模型"', header)
 
 
 if __name__ == "__main__":

@@ -39,8 +39,9 @@ class SettingsDrawerTest(unittest.TestCase):
         )
         self.assertIsNotNone(drawer)
         markup = drawer.group(1)
-        for heading in ("Ollama 服务", "模型管理", "运行信息"):
+        for heading in ("Ollama 服务", "模型管理"):
             self.assertIn(heading, markup)
+        self.assertNotIn("运行信息将在后续界面迁移中放置于此", markup)
         for management_id in (
             "ollamaConfigForm",
             "ollamaInstallDir",
@@ -111,7 +112,14 @@ class SettingsDrawerTest(unittest.TestCase):
         self.assertRegex(self.stylesheet, r"\.settings-drawer\s*\{[^}]*transform:\s*translateX\(100%\)")
         self.assertRegex(self.stylesheet, r"\.settings-drawer\.is-open\s*\{[^}]*transform:\s*translateX\(0\)")
         self.assertRegex(self.stylesheet, r"\.settings-drawer-content\s*\{[^}]*overflow-y:\s*auto")
-        mobile = re.search(r"@media \(max-width: 768px\)\s*\{(.*?)\n\}", self.stylesheet, re.DOTALL)
+        tablet = re.search(
+            r"@media \(min-width: 768px\) and \(max-width: 1199px\)\s*\{(.*?)\n\}",
+            self.stylesheet,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(tablet)
+        self.assertRegex(tablet.group(1), r"\.settings-drawer\s*\{[^}]*width:\s*min\(400px, 100vw\)")
+        mobile = re.search(r"@media \(max-width: 767px\)\s*\{(.*?)\n\}", self.stylesheet, re.DOTALL)
         self.assertIsNotNone(mobile)
         self.assertRegex(mobile.group(1), r"\.settings-drawer\s*\{[^}]*width:\s*100vw")
         drawer_rules = "\n".join(
