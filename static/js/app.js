@@ -16,12 +16,12 @@ const settingsButton = document.getElementById("settingsButton");
 const clearChatButton = document.getElementById("clearChat");
 const statusElement = document.getElementById("status");
 
-// 区域：配置中心 Drawer（UI-Slice 4，仅框架，不迁移业务组件）
+// 区域：配置中心 Drawer（UI-Slice 5：包含 Ollama 配置、状态和启动）
 const settingsOverlay = document.getElementById("settingsOverlay");
 const settingsDrawer = document.getElementById("settingsDrawer");
 const settingsCloseButton = document.getElementById("settingsCloseButton");
 
-// 区域：chat-main / Ollama 管理/配置（#ollamaPanel）
+// 区域：Settings Drawer / Ollama 管理
 const ollamaConfigForm = document.getElementById("ollamaConfigForm");
 const ollamaInstallDirInput = document.getElementById("ollamaInstallDir");
 const saveOllamaConfigButton = document.getElementById("saveOllamaConfig");
@@ -33,7 +33,7 @@ const ollamaVersionElement = document.getElementById("ollamaVersion");
 const ollamaServiceStateElement = document.getElementById("ollamaServiceState");
 const ollamaMessageElement = document.getElementById("ollamaMessage");
 
-// 区域：chat-main / 模型下载（#ollamaPanel 内）
+// 区域：chat-main / 模型下载（UI-Slice 6 前暂留主区域）
 const modelPullForm = document.getElementById("modelPullForm");
 const pullModelNameInput = document.getElementById("pullModelName");
 const pullModelButton = document.getElementById("pullModelButton");
@@ -117,14 +117,14 @@ function renderOllamaManagement() {
 
   if (ollamaUiState.requestFailed) {
     setOllamaStatusLabel("请求失败", "is-error");
-  } else if (ready) {
-    setOllamaStatusLabel("Ready", "is-ready");
   } else if (ollamaUiState.starting) {
     setOllamaStatusLabel("正在启动...", "is-warning");
   } else if (!configured && !config.install_dir) {
     setOllamaStatusLabel("未配置", "is-neutral");
   } else if (!configured || config.valid === false) {
     setOllamaStatusLabel("配置无效", "is-error");
+  } else if (ready) {
+    setOllamaStatusLabel("Ready", "is-ready");
   } else if (running) {
     setOllamaStatusLabel("已运行但 API 未 Ready", "is-warning");
   } else {
@@ -764,7 +764,7 @@ function clearConversation() {
 }
 
 function setSettingsDrawerOpen(open) {
-  if (!settingsButton || !settingsOverlay || !settingsDrawer || !settingsCloseButton) return;
+  if (!settingsButton || !settingsOverlay || !settingsDrawer || !settingsCloseButton) return false;
 
   const shouldOpen = Boolean(open);
   const wasOpen = settingsDrawer.classList.contains("is-open");
@@ -781,10 +781,12 @@ function setSettingsDrawerOpen(open) {
       if (settingsDrawer.classList.contains("is-open")) settingsCloseButton.focus();
     });
   }
+  return true;
 }
 
 function openSettingsDrawer() {
-  setSettingsDrawerOpen(true);
+  const wasOpen = settingsDrawer?.classList.contains("is-open") === true;
+  if (setSettingsDrawerOpen(true) && !wasOpen) refreshOllamaStatus();
 }
 
 function closeSettingsDrawer() {

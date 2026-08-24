@@ -241,52 +241,16 @@ header select {
   color: var(--nav-text);
 }
 
-.ollama-panel {
-  padding: 0 16px;
+.model-pull-panel {
+  padding: 10px 16px 12px;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--panel) 94%, var(--primary) 4%);
 }
 
-.ollama-panel-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 0;
-  cursor: pointer;
-  list-style: none;
-}
-
-.ollama-panel-summary::-webkit-details-marker {
-  display: none;
-}
-
-.ollama-panel-summary h2 {
-  margin: 0;
+.model-pull-panel h2 {
+  margin: 0 0 8px;
   font-size: 13px;
   color: var(--muted);
-}
-
-.ollama-panel-summary::before {
-  content: "▸";
-  margin-right: 6px;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.ollama-panel[open] .ollama-panel-summary::before {
-  content: "▾";
-}
-
-.ollama-panel-body {
-  display: none;
-}
-
-.ollama-panel[open] .ollama-panel-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px 16px;
-  padding-bottom: 12px;
 }
 
 .ollama-status {
@@ -336,22 +300,38 @@ header select {
 }
 
 .ollama-details {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 6px 16px;
+  margin: 0;
   color: var(--muted);
   font-size: 13px;
 }
 
-.ollama-details strong {
-  color: var(--text);
+.ollama-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.ollama-detail-row + .ollama-detail-row {
+  border-top: 1px solid rgba(148, 163, 184, .15);
+}
+
+.ollama-detail-row dd {
+  margin: 0;
+  color: #f1f5f9;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 
 .ollama-actions {
   display: flex;
   gap: 8px;
+}
+
+.ollama-actions button {
+  flex: 1;
 }
 
 .ollama-message {
@@ -368,7 +348,6 @@ header select {
 }
 
 .model-pull-form {
-  grid-column: 1 / -1;
   min-width: 0;
 }
 
@@ -381,9 +360,9 @@ header select {
 }
 
 .model-pull-progress {
-  grid-column: 1 / -1;
   display: grid;
   gap: 6px;
+  margin-top: 8px;
   min-width: 0;
 }
 
@@ -809,6 +788,79 @@ body.settings-drawer-open {
   line-height: 1.6;
 }
 
+.settings-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-ollama-section .ollama-status {
+  color: #cbd5e1;
+}
+
+.settings-ollama-section .ollama-status-dot {
+  background: #64748b;
+}
+
+.settings-ollama-section .ollama-status.is-ready .ollama-status-dot {
+  background: #4ade80;
+}
+
+.settings-ollama-section .ollama-status.is-warning .ollama-status-dot {
+  background: #fbbf24;
+}
+
+.settings-ollama-section .ollama-status.is-error .ollama-status-dot {
+  background: #f87171;
+}
+
+.settings-ollama-section .ollama-details {
+  margin-top: 14px;
+  padding: 2px 14px;
+  border: 1px solid rgba(148, 163, 184, .2);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, .6);
+  color: #94a3b8;
+}
+
+.settings-ollama-section .ollama-config-form {
+  margin-top: 16px;
+}
+
+.settings-ollama-section .ollama-config-form label {
+  color: #cbd5e1;
+}
+
+.settings-ollama-section input {
+  background: rgba(15, 23, 42, .7);
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, .3);
+}
+
+.settings-ollama-section input::placeholder {
+  color: #64748b;
+}
+
+.settings-ollama-section .ollama-actions {
+  margin-top: 12px;
+}
+
+.settings-ollama-section .secondary {
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, .35);
+}
+
+.settings-ollama-section .ollama-message {
+  min-height: 18px;
+  margin: 9px 0 0;
+  color: #94a3b8;
+}
+
+.settings-ollama-section .ollama-message.error {
+  color: #f87171;
+}
+
 @media (max-width: 1100px) {
   .settings-drawer {
     width: min(400px, 100vw);
@@ -845,17 +897,6 @@ body.settings-drawer-open {
     max-width: none;
   }
 
-  .ollama-panel[open] .ollama-panel-body {
-    grid-template-columns: 1fr;
-  }
-
-  .ollama-details {
-    justify-content: flex-start;
-  }
-
-  .ollama-actions button {
-    flex: 1;
-  }
 }
 
 @media (max-width: 420px) {

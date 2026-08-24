@@ -31,7 +31,7 @@ class SettingsDrawerTest(unittest.TestCase):
         self.assertIn('aria-controls="settingsDrawer"', self.html)
         self.assertIn('aria-expanded="false"', self.html)
 
-    def test_drawer_contains_only_future_section_skeletons(self):
+    def test_drawer_contains_ollama_management_without_model_pull(self):
         drawer = re.search(
             r'<aside[^>]*id="settingsDrawer"[^>]*>(.*?)</aside>',
             self.html,
@@ -41,14 +41,26 @@ class SettingsDrawerTest(unittest.TestCase):
         markup = drawer.group(1)
         for heading in ("Ollama 服务", "模型管理", "运行信息"):
             self.assertIn(heading, markup)
-        for existing_business_id in (
+        for management_id in (
             "ollamaConfigForm",
+            "ollamaInstallDir",
+            "saveOllamaConfig",
             "ollamaServiceStatus",
+            "ollamaVersion",
+            "ollamaServiceState",
             "startOllama",
-            "modelPullForm",
+            "refreshOllamaStatus",
         ):
-            self.assertNotIn(f'id="{existing_business_id}"', markup)
-            self.assertEqual(self.html.count(f'id="{existing_business_id}"'), 1)
+            self.assertIn(f'id="{management_id}"', markup)
+            self.assertEqual(self.html.count(f'id="{management_id}"'), 1)
+        for pull_id in ("modelPullForm", "pullModelName", "pullModelButton", "modelPullProgress"):
+            self.assertNotIn(f'id="{pull_id}"', markup)
+            self.assertEqual(self.html.count(f'id="{pull_id}"'), 1)
+
+    def test_page_has_no_duplicate_dom_ids(self):
+        ids = re.findall(r'\sid="([^"]+)"', self.html)
+        duplicates = sorted(element_id for element_id in set(ids) if ids.count(element_id) > 1)
+        self.assertEqual(duplicates, [])
 
     def test_drawer_interactions_and_accessibility_state_are_centralized(self):
         for function_name in (
@@ -62,6 +74,10 @@ class SettingsDrawerTest(unittest.TestCase):
         self.assertIn('settingsCloseButton.focus()', self.javascript)
         self.assertIn('settingsButton.focus()', self.javascript)
         self.assertIn('event.key === "Escape"', self.javascript)
+        self.assertIn(
+            'if (setSettingsDrawerOpen(true) && !wasOpen) refreshOllamaStatus()',
+            self.javascript,
+        )
         self.assertEqual(
             self.javascript.count('settingsButton?.addEventListener("click", openSettingsDrawer)'),
             1,

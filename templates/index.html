@@ -18,7 +18,7 @@
       └── #composerBar   输入区（Chat 表单）
 
   约定：所有现有 DOM ID 是 JS 的稳定性契约，后续 UI 重构移动元素时必须保留。
-  Settings Drawer 仅提供配置中心框架，现有业务组件仍保留在原位置。
+  Ollama 配置、状态和启动已迁移到 Settings Drawer；模型下载暂留主区域。
 -->
 <div class="app" id="page">
   <!-- 区域：header（UI-Slice 1：精简导航，仅 Logo/主导航/模型选择/设置入口） -->
@@ -51,66 +51,32 @@
 
   <!-- 区域：chat-main -->
   <div class="chat-main" id="chatMain">
-    <!--
-      子区域：Ollama 管理/配置（UI-Slice 2 起改为默认折叠的兼容容器）
-      所有业务 DOM 与 ID 原样保留，供 UI-Slice 5/6 迁移到 Settings Drawer。
-    -->
-    <details class="ollama-panel" id="ollamaPanel">
-      <summary class="ollama-panel-summary" id="ollamaPanelSummary">
-        <h2 id="ollamaPanelTitle">Ollama 服务</h2>
-        <span id="ollamaServiceStatus" class="ollama-status is-neutral" aria-live="polite">
-          <span class="ollama-status-dot" aria-hidden="true"></span>
-          <span id="ollamaStatusText">正在检测...</span>
-        </span>
-      </summary>
-      <div class="ollama-panel-body">
-        <form id="ollamaConfigForm" class="ollama-config-form">
-          <label for="ollamaInstallDir">安装目录</label>
-          <div class="ollama-config-controls">
-            <input
-              id="ollamaInstallDir"
-              name="install_dir"
-              type="text"
-              placeholder="/home/lvi/ollama-server/bin"
-              autocomplete="off"
-            >
-            <button id="saveOllamaConfig" class="primary" type="submit">保存</button>
-          </div>
-        </form>
-        <div class="ollama-details" id="ollamaDetails" aria-label="Ollama 服务详情">
-          <span>版本：<strong id="ollamaVersion">—</strong></span>
-          <span>服务状态：<strong id="ollamaServiceState">unknown</strong></span>
+    <!-- UI-Slice 5：模型下载仍暂留主区域，UI-Slice 6 再迁入 Drawer。 -->
+    <section class="model-pull-panel" id="modelPullPanel" aria-labelledby="modelPullPanelTitle">
+      <h2 id="modelPullPanelTitle">模型下载</h2>
+      <form id="modelPullForm" class="model-pull-form">
+        <label for="pullModelName">模型名称</label>
+        <div class="ollama-config-controls">
+          <input
+            id="pullModelName"
+            name="model"
+            type="text"
+            placeholder="deepseek-r1:1.5b"
+            autocomplete="off"
+          >
+          <button id="pullModelButton" class="primary" type="submit">下载</button>
         </div>
-        <div class="ollama-actions" id="ollamaActions">
-          <button id="startOllama" class="primary" type="button" disabled>启动 Ollama</button>
-          <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
+      </form>
+      <div id="modelPullProgress" class="model-pull-progress" hidden>
+        <div class="model-pull-progress-row">
+          <span id="pullStatusText" role="status" aria-live="polite"></span>
+          <span id="pullProgressText"></span>
         </div>
-        <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
-        <form id="modelPullForm" class="model-pull-form">
-          <label for="pullModelName">下载模型</label>
-          <div class="ollama-config-controls">
-            <input
-              id="pullModelName"
-              name="model"
-              type="text"
-              placeholder="deepseek-r1:1.5b"
-              autocomplete="off"
-            >
-            <button id="pullModelButton" class="primary" type="submit">下载</button>
-          </div>
-        </form>
-        <div id="modelPullProgress" class="model-pull-progress" hidden>
-          <div class="model-pull-progress-row">
-            <span id="pullStatusText" role="status" aria-live="polite"></span>
-            <span id="pullProgressText"></span>
-          </div>
-          <div class="progress-bar">
-            <div id="pullProgressBarFill" class="progress-bar-fill"></div>
-          </div>
+        <div class="progress-bar">
+          <div id="pullProgressBarFill" class="progress-bar-fill"></div>
         </div>
       </div>
-      <!-- 占位：未来 Settings Drawer 挂载点，仅注释占位，不渲染任何元素 -->
-    </details>
+    </section>
 
     <!-- 子区域：消息流（含 Welcome 空状态） -->
     <main id="messages">
@@ -160,7 +126,7 @@
   </div>
 </div>
 
-<!-- UI-Slice 4：配置中心 Drawer 框架；业务组件将在 UI-Slice 5/6 迁移。 -->
+<!-- UI-Slice 5：Ollama 管理位于 Drawer；模型下载仍在主区域。 -->
 <div id="settingsOverlay" class="settings-overlay" aria-hidden="true"></div>
 <aside
   id="settingsDrawer"
@@ -180,13 +146,46 @@
     >×</button>
   </header>
   <div class="settings-drawer-content">
-    <section class="settings-section" aria-labelledby="settingsOllamaHeading">
-      <h3 id="settingsOllamaHeading">Ollama 服务</h3>
-      <p>服务配置与控制将在后续界面迁移中放置于此。</p>
+    <section class="settings-section settings-ollama-section" aria-labelledby="settingsOllamaHeading">
+      <div class="settings-section-heading">
+        <h3 id="settingsOllamaHeading">Ollama 服务</h3>
+        <span id="ollamaServiceStatus" class="ollama-status is-neutral" aria-live="polite">
+          <span class="ollama-status-dot" aria-hidden="true"></span>
+          <span id="ollamaStatusText">正在检测...</span>
+        </span>
+      </div>
+      <dl class="ollama-details" id="ollamaDetails" aria-label="Ollama 服务详情">
+        <div class="ollama-detail-row">
+          <dt>服务状态</dt>
+          <dd id="ollamaServiceState">unknown</dd>
+        </div>
+        <div class="ollama-detail-row">
+          <dt>版本</dt>
+          <dd id="ollamaVersion">—</dd>
+        </div>
+      </dl>
+      <form id="ollamaConfigForm" class="ollama-config-form">
+        <label for="ollamaInstallDir">安装目录</label>
+        <div class="ollama-config-controls">
+          <input
+            id="ollamaInstallDir"
+            name="install_dir"
+            type="text"
+            placeholder="/home/lvi/ollama-server/bin"
+            autocomplete="off"
+          >
+          <button id="saveOllamaConfig" class="primary" type="submit">保存</button>
+        </div>
+      </form>
+      <div class="ollama-actions" id="ollamaActions">
+        <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
+        <button id="startOllama" class="primary" type="button" disabled>启动 Ollama</button>
+      </div>
+      <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
     </section>
     <section class="settings-section" aria-labelledby="settingsModelsHeading">
       <h3 id="settingsModelsHeading">模型管理</h3>
-      <p>模型管理内容将在后续界面迁移中放置于此。</p>
+      <p>模型下载将在 UI-Slice 6 迁移到这里。</p>
     </section>
     <section class="settings-section" aria-labelledby="settingsRuntimeHeading">
       <h3 id="settingsRuntimeHeading">运行信息</h3>

@@ -1,3 +1,4 @@
+import re
 import stat
 import tempfile
 import unittest
@@ -24,6 +25,8 @@ class OllamaRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
+        drawer = re.search(r'<aside[^>]*id="settingsDrawer"[^>]*>(.*?)</aside>', html, re.DOTALL)
+        self.assertIsNotNone(drawer)
         for element_id in (
             "ollamaConfigForm",
             "ollamaInstallDir",
@@ -32,7 +35,8 @@ class OllamaRoutesTest(unittest.TestCase):
             "startOllama",
             "refreshOllamaStatus",
         ):
-            self.assertIn(f'id="{element_id}"', html)
+            self.assertIn(f'id="{element_id}"', drawer.group(1))
+            self.assertEqual(html.count(f'id="{element_id}"'), 1)
 
     def test_get_ollama_config_without_saved_settings(self):
         response = self.client.get("/api/ollama/config")

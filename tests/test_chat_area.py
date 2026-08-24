@@ -33,21 +33,19 @@ class ChatAreaTest(unittest.TestCase):
         for label in labels:
             self.assertIn(label, self.html)
 
-    def test_ollama_panel_is_collapsible_compat_container(self):
-        self.assertIn('<details class="ollama-panel" id="ollamaPanel">', self.html)
-        self.assertIn('id="ollamaPanelSummary"', self.html)
-        # 业务 DOM 全部保留
-        for element_id in (
+    def test_main_chat_removes_ollama_management_but_keeps_model_pull(self):
+        main_markup = self.html[: self.html.index('id="settingsOverlay"')]
+        self.assertNotIn('id="ollamaPanel"', main_markup)
+        for management_id in (
             "ollamaConfigForm",
             "ollamaInstallDir",
             "saveOllamaConfig",
             "startOllama",
             "refreshOllamaStatus",
-            "modelPullForm",
-            "pullModelName",
-            "pullModelButton",
         ):
-            self.assertIn(f'id="{element_id}"', self.html)
+            self.assertNotIn(f'id="{management_id}"', main_markup)
+        for pull_id in ("modelPullPanel", "modelPullForm", "pullModelName", "pullModelButton"):
+            self.assertIn(f'id="{pull_id}"', main_markup)
 
     def test_messages_container_contains_welcome(self):
         messages_match = re.search(r'<main id="messages">(.*?)</main>', self.html, re.DOTALL)
