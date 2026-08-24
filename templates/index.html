@@ -21,9 +21,12 @@
   未来 Settings Drawer 仅做结构占位（见下方注释），本阶段不实现。
 -->
 <div class="app" id="page">
-  <!-- 区域：header -->
+  <!-- 区域：header（UI-Slice 1：精简导航，仅 Logo/主导航/模型选择/设置入口） -->
   <header id="pageHeader">
-    <h1>Ollama Web Chat</h1>
+    <div class="brand" id="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <h1>Ollama Web Chat</h1>
+    </div>
     <nav class="top-nav" id="topNav" aria-label="页面导航">
       <a class="active" href="/">AI 对话</a>
       <a href="/platform">平台能力检测</a>
@@ -31,10 +34,18 @@
     </nav>
     <div class="toolbar" id="modelToolbar">
       <select id="modelSelect"><option value="">正在加载模型...</option></select>
-      <button id="refreshModels" class="secondary" type="button">刷新模型</button>
-      <button id="clearChat" class="secondary" type="button">清空对话</button>
+      <button
+        id="settingsButton"
+        class="icon-button"
+        type="button"
+        title="设置"
+        aria-label="设置"
+      >⚙</button>
     </div>
-    <span id="status" role="status" aria-live="polite">未连接</span>
+    <!-- 清空对话：Header 瘦身后暂以隐藏入口保留能力，UI-Slice 4 迁入 Settings Drawer -->
+    <button id="clearChat" class="secondary" type="button" hidden>清空对话</button>
+    <!-- 全局状态提示：仅在有内容时以浮动条显示，不再常驻 Header -->
+    <span id="status" role="status" aria-live="polite"></span>
   </header>
 
   <!-- 区域：chat-main -->

@@ -12,7 +12,7 @@ const DEFAULT_CONFIG = {
 
 // 区域：header（#pageHeader）
 const modelSelect = document.getElementById("modelSelect");
-const refreshModelsButton = document.getElementById("refreshModels");
+const settingsButton = document.getElementById("settingsButton");
 const clearChatButton = document.getElementById("clearChat");
 const statusElement = document.getElementById("status");
 
@@ -395,7 +395,6 @@ function setBusy(busy) {
   sendButton.disabled = busy;
   stopButton.disabled = !busy;
   modelSelect.disabled = busy;
-  refreshModelsButton.disabled = busy;
   clearChatButton.disabled = busy;
   sendButton.textContent = busy ? "生成中..." : "发送";
 }
@@ -411,7 +410,6 @@ async function loadConfig() {
 }
 
 async function loadModels(preferredModel = "") {
-  setStatus("正在连接 Ollama...");
   try {
     const result = await requestJson("/api/models");
 
@@ -443,7 +441,8 @@ async function loadModels(preferredModel = "") {
     }
 
     localStorage.setItem("ollama_web_chat_model", modelSelect.value || "");
-    setStatus(`已连接，共 ${models.length} 个模型`);
+    // Header 瘦身后成功状态静默，仅失败时提示
+    setStatus("");
   } catch (error) {
     modelSelect.innerHTML = '<option value="">连接失败</option>';
     setStatus(error.message, true);
@@ -712,6 +711,14 @@ async function startModelPull() {
   if (succeeded) await finishPullSuccess(modelName);
 }
 
+function clearConversation() {
+  stopGeneration();
+  messages = [];
+  saveMessages();
+  renderMessages();
+  setStatus("对话已清空");
+}
+
 // ============================================================
 // 事件绑定基线：脚本以 defer 方式加载并只执行一次，
 // 每个元素的事件在此处仅绑定一次，禁止在渲染函数中重复绑定。
@@ -733,14 +740,11 @@ promptInput.addEventListener("keydown", (event) => {
 });
 
 modelSelect.addEventListener("change", () => localStorage.setItem("ollama_web_chat_model", modelSelect.value));
-refreshModelsButton.addEventListener("click", loadModels);
 stopButton.addEventListener("click", stopGeneration);
-clearChatButton.addEventListener("click", () => {
-  stopGeneration();
-  messages = [];
-  saveMessages();
-  renderMessages();
-  setStatus("对话已清空");
+clearChatButton.addEventListener("click", clearConversation);
+// Settings 入口：UI-Slice 1 仅保留占位，Drawer 在 UI-Slice 4 实现
+settingsButton.addEventListener("click", () => {
+  setStatus("设置功能即将上线");
 });
 ollamaConfigForm.addEventListener("submit", saveOllamaConfig);
 startOllamaButton.addEventListener("click", startOllama);
