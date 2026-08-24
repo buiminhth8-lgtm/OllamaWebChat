@@ -78,6 +78,21 @@ Platform Scan：http://<device-ip>:3000/platform
 Demo：          http://<device-ip>:3000/demo
 ```
 
+## Web UI
+
+AI 对话主页保持聚焦于对话本身：
+
+- Header 提供页面导航、唯一的模型选择器和配置中心入口。
+- 无对话时显示 Welcome 标题与 3 个推荐问题卡片；有对话时显示 Chat 消息流。
+- 底部 Composer 支持多行输入、Enter 发送、Shift+Enter 换行，以及生成期间在同一主操作位停止响应。
+
+右上角 `⚙` 打开配置中心：
+
+- Ollama 服务：配置安装目录，查看状态、版本和 systemd 服务状态，并按需启动或刷新。
+- 模型管理：输入模型名称，通过 NDJSON 流实时显示下载状态、百分比和大小；成功后刷新 Header 模型选择器并优先选中新模型。
+
+Ollama 配置和模型下载仅位于配置中心，AI 对话主页不会重复显示管理面板。
+
 ## 正式部署
 
 安装脚本根据当前仓库路径和执行用户渲染 systemd 单元，因此不要移动已部署的仓库或其中的 `venv`：
@@ -108,15 +123,17 @@ Ollama systemd 单元不会写死 Ollama 安装路径。网页保存的配置位
 打开 `http://<device-ip>:3000`：
 
 ```text
-配置 Ollama 安装目录
-→ 保存
-→ 检查 Ollama 状态
-→ 点击“启动 Ollama”
+打开网页
+→ 点击右上角 ⚙ 打开配置中心
+→ 配置并保存 Ollama 安装目录
+→ 刷新状态并点击“启动 Ollama”
 → 等待 /api/version Ready
-→ 选择已有模型并开始对话
+→ 下载模型或在 Header 选择已有模型
+→ 关闭配置中心
+→ 在 Composer 输入消息并开始对话
 ```
 
-也可以直接在“下载模型”中输入：
+需要下载模型时，在配置中心的“模型管理”中输入：
 
 ```text
 deepseek-r1:1.5b

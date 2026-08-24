@@ -190,11 +190,6 @@ button:disabled {
   border: 1px solid var(--border);
 }
 
-.danger {
-  background: var(--danger);
-  color: white;
-}
-
 #status {
   position: absolute;
   top: calc(100% + 8px);
