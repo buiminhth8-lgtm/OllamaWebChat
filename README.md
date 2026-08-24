@@ -33,7 +33,7 @@ tests/                         unittest 测试
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git python3 python3-venv
+sudo apt-get install -y git zstd python3 python3-venv
 
 git clone https://github.com/buiminhth8-lgtm/OllamaWebChat.git
 cd OllamaWebChat
@@ -43,11 +43,23 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-准备适用于设备架构的 Ollama 可执行文件，并确保它具有执行权限。网页配置的安装目录支持以下任一布局：
+准备适用于设备架构的 Ollama安装包 如 RK3588 linux平台就需要准备 arm架构的 ollama-linux-arm64.tar.zst
+
+ 可执行文件，并确保它具有执行权限。网页配置的安装目录支持以下任一布局：
 
 ```text
-<install_dir>/ollama
-<install_dir>/bin/ollama
+
+#创建ollama 服务目录
+mkdir ollama-server
+
+#解压安装包到刚刚创建的新目录
+sudo tar -zstd -xvf ollama-linux-arm64.tar.zst -C ollama-server
+
+解压后的目录结构如下
+
+ollama-server/ollama
+
+ollama-server/bin/ollama
 ```
 
 例如可执行文件是 `/home/lvi/ollama-server/bin/ollama` 时，安装目录可填写 `/home/lvi/ollama-server/bin`，也可填写 `/home/lvi/ollama-server`。
