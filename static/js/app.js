@@ -13,11 +13,185 @@ const sendButton = document.getElementById("sendButton");
 const stopButton = document.getElementById("stopButton");
 const messagesContainer = document.getElementById("messages");
 const statusElement = document.getElementById("status");
+const ollamaConfigForm = document.getElementById("ollamaConfigForm");
+const ollamaInstallDirInput = document.getElementById("ollamaInstallDir");
+const saveOllamaConfigButton = document.getElementById("saveOllamaConfig");
+const startOllamaButton = document.getElementById("startOllama");
+const refreshOllamaStatusButton = document.getElementById("refreshOllamaStatus");
+const ollamaServiceStatusElement = document.getElementById("ollamaServiceStatus");
+const ollamaStatusTextElement = document.getElementById("ollamaStatusText");
+const ollamaVersionElement = document.getElementById("ollamaVersion");
+const ollamaServiceStateElement = document.getElementById("ollamaServiceState");
+const ollamaMessageElement = document.getElementById("ollamaMessage");
 
 let appConfig = { ...DEFAULT_CONFIG };
 let messages = loadMessages();
 let abortController = null;
 let sideChannelThinking = "";
+const ollamaUiState = {
+  config: null,
+  status: null,
+  saving: false,
+  starting: false,
+  refreshing: false,
+  requestFailed: false,
+};
+
+function getApiErrorMessage(payload, fallback) {
+  if (typeof payload?.message === "string" && payload.message) return payload.message;
+  if (typeof payload?.error === "string" && payload.error) return payload.error;
+  if (typeof payload?.error?.message === "string" && payload.error.message) return payload.error.message;
+  return fallback;
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, options);
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(response.ok ? "服务器返回格式无效" : `请求失败：HTTP ${response.status}`);
+  }
+  if (!response.ok) {
+    throw new Error(getApiErrorMessage(payload, `请求失败：HTTP ${response.status}`));
+  }
+  return payload;
+}
+
+function setOllamaMessage(text, isError = false) {
+  ollamaMessageElement.textContent = text;
+  ollamaMessageElement.classList.toggle("error", isError);
+}
+
+function setOllamaStatusLabel(text, tone) {
+  ollamaStatusTextElement.textContent = text;
+  ollamaServiceStatusElement.classList.remove("is-neutral", "is-ready", "is-warning", "is-error");
+  ollamaServiceStatusElement.classList.add(tone);
+}
+
+function renderOllamaManagement() {
+  const config = ollamaUiState.config || {};
+  const serviceStatus = ollamaUiState.status || {};
+  const configured = serviceStatus.configured === true;
+  const running = serviceStatus.running === true;
+  const ready = serviceStatus.ready === true;
+
+  ollamaVersionElement.textContent = serviceStatus.version || "—";
+  ollamaServiceStateElement.textContent = serviceStatus.service_state || "unknown";
+
+  if (ollamaUiState.requestFailed) {
+    setOllamaStatusLabel("请求失败", "is-error");
+  } else if (ready) {
+    setOllamaStatusLabel("Ready", "is-ready");
+  } else if (ollamaUiState.starting) {
+    setOllamaStatusLabel("正在启动...", "is-warning");
+  } else if (!configured && !config.install_dir) {
+    setOllamaStatusLabel("未配置", "is-neutral");
+  } else if (!configured || config.valid === false) {
+    setOllamaStatusLabel("配置无效", "is-error");
+  } else if (running) {
+    setOllamaStatusLabel("已运行但 API 未 Ready", "is-warning");
+  } else {
+    setOllamaStatusLabel("未启动", "is-neutral");
+  }
+
+  saveOllamaConfigButton.disabled = ollamaUiState.saving || ollamaUiState.starting || ollamaUiState.refreshing;
+  saveOllamaConfigButton.textContent = ollamaUiState.saving ? "保存中..." : "保存";
+  startOllamaButton.disabled = ollamaUiState.starting || ollamaUiState.refreshing || ready || !configured;
+  startOllamaButton.textContent = ollamaUiState.starting ? "正在启动..." : ready ? "已运行" : "启动 Ollama";
+  refreshOllamaStatusButton.disabled = ollamaUiState.refreshing || ollamaUiState.starting;
+}
+
+async function refreshOllamaManagement(successMessage = "") {
+  if (ollamaUiState.refreshing) return;
+  ollamaUiState.refreshing = true;
+  ollamaUiState.requestFailed = false;
+  renderOllamaManagement();
+
+  const [configResult, statusResult] = await Promise.allSettled([
+    requestJson("/api/ollama/config"),
+    requestJson("/api/ollama/status"),
+  ]);
+
+  if (configResult.status === "fulfilled") {
+    ollamaUiState.config = configResult.value;
+    ollamaInstallDirInput.value = configResult.value.install_dir || "";
+  }
+  if (statusResult.status === "fulfilled") {
+    ollamaUiState.status = statusResult.value;
+  }
+
+  const failure = [configResult, statusResult].find((result) => result.status === "rejected");
+  ollamaUiState.requestFailed = Boolean(failure);
+  ollamaUiState.refreshing = false;
+  if (failure) {
+    setOllamaMessage(`请求失败：${failure.reason.message}`, true);
+  } else if (successMessage) {
+    setOllamaMessage(successMessage);
+  }
+  renderOllamaManagement();
+}
+
+async function refreshOllamaStatus({ allowWhileStarting = false, clearMessage = true } = {}) {
+  if (ollamaUiState.refreshing || (ollamaUiState.starting && !allowWhileStarting)) return;
+  ollamaUiState.refreshing = true;
+  ollamaUiState.requestFailed = false;
+  if (clearMessage) setOllamaMessage("");
+  renderOllamaManagement();
+  try {
+    ollamaUiState.status = await requestJson("/api/ollama/status");
+  } catch (error) {
+    ollamaUiState.requestFailed = true;
+    setOllamaMessage(`请求失败：${error.message}`, true);
+  } finally {
+    ollamaUiState.refreshing = false;
+    renderOllamaManagement();
+  }
+}
+
+async function saveOllamaConfig(event) {
+  event.preventDefault();
+  if (ollamaUiState.saving || ollamaUiState.starting || ollamaUiState.refreshing) return;
+  ollamaUiState.saving = true;
+  setOllamaMessage("");
+  renderOllamaManagement();
+  try {
+    await requestJson("/api/ollama/config", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ install_dir: ollamaInstallDirInput.value.trim() }),
+    });
+    await refreshOllamaManagement("配置已保存");
+  } catch (error) {
+    setOllamaMessage(error.message, true);
+  } finally {
+    ollamaUiState.saving = false;
+    renderOllamaManagement();
+  }
+}
+
+async function startOllama() {
+  if (
+    ollamaUiState.starting ||
+    ollamaUiState.refreshing ||
+    ollamaUiState.status?.ready === true
+  ) return;
+
+  ollamaUiState.starting = true;
+  setOllamaMessage("正在启动 Ollama...");
+  renderOllamaManagement();
+  try {
+    const result = await requestJson("/api/ollama/start", { method: "POST" });
+    setOllamaMessage(result.message || "Ollama 已启动");
+    await refreshOllamaStatus({ allowWhileStarting: true, clearMessage: false });
+    await loadModels();
+  } catch (error) {
+    setOllamaMessage(error.message, true);
+  } finally {
+    ollamaUiState.starting = false;
+    renderOllamaManagement();
+  }
+}
 
 function toClientConfig(serverConfig) {
   return {
@@ -203,9 +377,7 @@ function setBusy(busy) {
 
 async function loadConfig() {
   try {
-    const response = await fetch("/api/config");
-    if (!response.ok) return;
-    appConfig = toClientConfig(await response.json());
+    appConfig = toClientConfig(await requestJson("/api/config"));
     renderMessages();
     saveMessages();
   } catch {
@@ -216,9 +388,7 @@ async function loadConfig() {
 async function loadModels() {
   setStatus("正在连接 Ollama...");
   try {
-    const response = await fetch("/api/models");
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "读取模型列表失败");
+    const result = await requestJson("/api/models");
 
     const current = modelSelect.value || localStorage.getItem("ollama_web_chat_model") || "";
     modelSelect.innerHTML = "";
@@ -375,8 +545,12 @@ clearChatButton.addEventListener("click", () => {
   renderMessages();
   setStatus("对话已清空");
 });
+ollamaConfigForm.addEventListener("submit", saveOllamaConfig);
+startOllamaButton.addEventListener("click", startOllama);
+refreshOllamaStatusButton.addEventListener("click", refreshOllamaStatus);
 
 renderMessages();
 loadConfig();
 loadModels();
+refreshOllamaManagement();
 promptInput.focus();

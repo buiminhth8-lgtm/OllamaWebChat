@@ -11,6 +11,7 @@ from config import (
     OLLAMA_BASE_URL,
     REQUEST_TIMEOUT,
 )
+from runtime_settings import SettingsValidationError
 
 bp = Blueprint("main", __name__)
 
@@ -109,6 +110,55 @@ def ollama_status():
         ), 500
 
     return jsonify(status)
+
+
+@bp.get("/api/ollama/config")
+def ollama_config():
+    try:
+        config = current_app.extensions["runtime_settings"].get_ollama_config()
+    except Exception:
+        current_app.logger.error("Failed to get Ollama runtime configuration")
+        return jsonify(
+            {
+                "error": "runtime_settings_error",
+                "message": "无法读取 Ollama 配置",
+            }
+        ), 500
+    return jsonify(config)
+
+
+@bp.put("/api/ollama/config")
+def update_ollama_config():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or "install_dir" not in payload:
+        return jsonify(
+            {
+                "error": "invalid_request",
+                "message": "请求体必须包含 install_dir",
+            }
+        ), 400
+
+    try:
+        config = current_app.extensions["runtime_settings"].set_ollama_install_dir(
+            payload["install_dir"]
+        )
+    except SettingsValidationError as exc:
+        return jsonify(
+            {
+                "error": "invalid_config",
+                "message": str(exc),
+            }
+        ), 400
+    except OSError:
+        current_app.logger.error("Failed to save Ollama runtime configuration")
+        return jsonify(
+            {
+                "error": "runtime_settings_error",
+                "message": "无法保存 Ollama 配置",
+            }
+        ), 500
+
+    return jsonify(config)
 
 
 @bp.post("/api/ollama/start")

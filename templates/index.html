@@ -23,6 +23,37 @@
     </div>
     <span id="status">未连接</span>
   </header>
+  <section class="ollama-panel" aria-labelledby="ollamaPanelTitle">
+    <div class="ollama-panel-heading">
+      <h2 id="ollamaPanelTitle">Ollama 服务</h2>
+      <span id="ollamaServiceStatus" class="ollama-status is-neutral" aria-live="polite">
+        <span class="ollama-status-dot" aria-hidden="true"></span>
+        <span id="ollamaStatusText">正在检测...</span>
+      </span>
+    </div>
+    <form id="ollamaConfigForm" class="ollama-config-form">
+      <label for="ollamaInstallDir">安装目录</label>
+      <div class="ollama-config-controls">
+        <input
+          id="ollamaInstallDir"
+          name="install_dir"
+          type="text"
+          placeholder="/home/lvi/ollama-server/bin"
+          autocomplete="off"
+        >
+        <button id="saveOllamaConfig" class="primary" type="submit">保存</button>
+      </div>
+    </form>
+    <div class="ollama-details" aria-label="Ollama 服务详情">
+      <span>版本：<strong id="ollamaVersion">—</strong></span>
+      <span>服务状态：<strong id="ollamaServiceState">unknown</strong></span>
+    </div>
+    <div class="ollama-actions">
+      <button id="startOllama" class="primary" type="button" disabled>启动 Ollama</button>
+      <button id="refreshOllamaStatus" class="secondary" type="button">刷新状态</button>
+    </div>
+    <p id="ollamaMessage" class="ollama-message" role="status" aria-live="polite"></p>
+  </section>
   <main id="messages"></main>
   <footer>
     <form id="chatForm">

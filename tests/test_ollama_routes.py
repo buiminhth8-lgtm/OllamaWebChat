@@ -1,3 +1,4 @@
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +18,63 @@ class OllamaRoutesTest(unittest.TestCase):
 
     def tearDown(self):
         self.temp_dir.cleanup()
+
+    def test_chat_page_contains_ollama_management_controls(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        for element_id in (
+            "ollamaConfigForm",
+            "ollamaInstallDir",
+            "saveOllamaConfig",
+            "ollamaServiceStatus",
+            "startOllama",
+            "refreshOllamaStatus",
+        ):
+            self.assertIn(f'id="{element_id}"', html)
+
+    def test_get_ollama_config_without_saved_settings(self):
+        response = self.client.get("/api/ollama/config")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["install_dir"], "")
+        self.assertFalse(response.get_json()["valid"])
+
+    def test_put_ollama_config_persists_valid_directory(self):
+        install_dir = Path(self.temp_dir.name) / "ollama-server"
+        install_dir.mkdir()
+        binary = install_dir / "ollama"
+        binary.write_text("#!/bin/sh\n", encoding="utf-8", newline="\n")
+        binary.chmod(binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        response = self.client.put(
+            "/api/ollama/config",
+            json={"install_dir": str(install_dir)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["valid"])
+        restored = self.client.get("/api/ollama/config").get_json()
+        self.assertEqual(restored["install_dir"], str(install_dir.resolve()))
+
+    def test_invalid_config_does_not_replace_saved_config(self):
+        install_dir = Path(self.temp_dir.name) / "valid-ollama"
+        install_dir.mkdir()
+        binary = install_dir / "ollama"
+        binary.write_text("#!/bin/sh\n", encoding="utf-8", newline="\n")
+        binary.chmod(binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        self.client.put("/api/ollama/config", json={"install_dir": str(install_dir)})
+
+        rejected = self.client.put(
+            "/api/ollama/config",
+            json={"install_dir": str(Path(self.temp_dir.name) / "missing")},
+        )
+
+        self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(rejected.get_json()["error"], "invalid_config")
+        restored = self.client.get("/api/ollama/config").get_json()
+        self.assertEqual(restored["install_dir"], str(install_dir.resolve()))
 
     def test_status_ready(self):
         expected = {
