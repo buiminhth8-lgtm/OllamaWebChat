@@ -10,7 +10,7 @@ Ollama Web Chat 是面向 Linux / RK3588 设备的 Flask Web 应用，包含：
 
 默认 Web 地址为 `http://<device-ip>:3000`，Ollama API 默认为 `http://127.0.0.1:11434`。
 
-## 项目结构
+## 1. 项目结构
 
 ```text
 app.py                         Flask 应用入口
@@ -27,59 +27,63 @@ script/install_services.sh     正式部署安装脚本
 tests/                         unittest 测试
 ```
 
-## 环境准备
+## 2. 环境准备
 
 目标系统需要 Python 3、`venv`、systemd 和 sudo。正式部署前，先在仓库根目录创建项目虚拟环境；Python 依赖始终以 `requirements.txt` 为准：
+
+### 2.1 安装相关依赖 
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y git zstd python3 python3-venv
 
+#第一次安装git 后需要配置 user.name 和 user.email
+
+```
+### 部署 OllamaWebChat 服务代码
+
+```bash
+
+#clone 项目
 git clone https://github.com/buiminhth8-lgtm/OllamaWebChat.git
+
+# 如果clone 过程慢 可以直接下载 代码然后复制到目标机器
+
 cd OllamaWebChat
 
 python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
 
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+```
+### 2.3 安装ollama 服务
+
+- 在线安装
+如果网络允许 忽略这一步 直接执行
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+
+```
+- 离线安装
 准备适用于设备架构的 Ollama安装包 如 RK3588 linux平台就需要准备 arm架构的 ollama-linux-arm64.tar.zst
 
- 可执行文件，并确保它具有执行权限。网页配置的安装目录支持以下任一布局：
-
-```text
-
+```bash
 #创建ollama 服务目录
 mkdir ollama-server
 
 #解压安装包到刚刚创建的新目录
-sudo tar -zstd -xvf ollama-linux-arm64.tar.zst -C ollama-server
+sudo tar --zstd -xvf ollama-linux-arm64.tar.zst -C ollama-server
 
-解压后的目录结构如下
-
-ollama-server/ollama
-
-ollama-server/bin/ollama
 ```
 
-例如可执行文件是 `/home/lvi/ollama-server/bin/ollama` 时，安装目录可填写 `/home/lvi/ollama-server/bin`，也可填写 `/home/lvi/ollama-server`。
+例如可执行文件是 `/home/<xxx>/ollama-server/bin/ollama` 时，在网页端配置 ollama 服务的安装目录可填写 `/home/<xxx>/ollama-server/bin`，也可填写 `/home/<xxx>/ollama-server`。
 
-## 开发模式启动
+##  3.启动web服务
 
-激活虚拟环境后运行：
-
-```bash
-source venv/bin/activate
-./start.sh
-```
-
-也可以直接运行：
-
-```bash
-export OLLAMA_BASE_URL=http://127.0.0.1:11434
-python3 app.py
-```
-
+### 3.1 简介
 开发模式不会安装 systemd 单元；如需从网页启动 Ollama，应先完成下方正式部署。可用环境变量包括 `WEB_HOST`、`WEB_PORT`、`OLLAMA_BASE_URL`、`OLLAMA_API_TIMEOUT`、`OLLAMA_START_WAIT_TIMEOUT`、`OLLAMA_PULL_CONNECT_TIMEOUT`、`OLLAMA_PULL_READ_TIMEOUT`、`OLLAMA_REQUEST_TIMEOUT`、`MAX_MESSAGE_CHARS`、`MAX_HISTORY_MESSAGES` 和 `MAX_HISTORY_CHARS`。
 
 页面入口：
@@ -90,28 +94,14 @@ Platform Scan：http://<device-ip>:3000/platform
 Demo：          http://<device-ip>:3000/demo
 ```
 
-## Web UI
 
-AI 对话主页保持聚焦于对话本身：
-
-- Header 提供页面导航、唯一的模型选择器和配置中心入口。
-- 无对话时显示 Welcome 标题与 3 个推荐问题卡片；有对话时显示 Chat 消息流。
-- 底部 Composer 支持多行输入、Enter 发送、Shift+Enter 换行，以及生成期间在同一主操作位停止响应。
-
-右上角 `⚙` 打开配置中心：
-
-- Ollama 服务：配置安装目录，查看状态、版本和 systemd 服务状态，并按需启动或刷新。
-- 模型管理：输入模型名称，通过 NDJSON 流实时显示下载状态、百分比和大小；成功后刷新 Header 模型选择器并优先选中新模型。
-
-Ollama 配置和模型下载仅位于配置中心，AI 对话主页不会重复显示管理面板。
-
-## 正式部署
+### 3.2 正式部署
 
 安装脚本根据当前仓库路径和执行用户渲染 systemd 单元，因此不要移动已部署的仓库或其中的 `venv`：
 
 ```bash
-chmod +x script/install_services.sh
-./script/install_services.sh
+sudo chmod a+x script/install_services.sh
+sudo ./script/install_services.sh
 ```
 
 安装结果：
@@ -129,6 +119,23 @@ ollama-webchat-ollama.service
 ```
 
 Ollama systemd 单元不会写死 Ollama 安装路径。网页保存的配置位于 `data/settings.json`，`ollama_runner.py` 启动时读取该配置、校验可执行文件，然后执行 `ollama serve`。安装脚本还会创建 `/etc/sudoers.d/ollama-webchat`，仅授权部署用户无密码执行固定命令 `systemctl start ollama-webchat-ollama.service`，并在安装前通过 `visudo` 校验。
+
+###  3.3 Web UI
+
+AI 对话主页保持聚焦于对话本身：
+
+- Header 提供页面导航、唯一的模型选择器和配置中心入口。
+- 无对话时显示 Welcome 标题与 3 个推荐问题卡片；有对话时显示 Chat 消息流。
+- 底部 Composer 支持多行输入、Enter 发送、Shift+Enter 换行，以及生成期间在同一主操作位停止响应。
+
+右上角 `⚙` 打开配置中心：
+
+- Ollama 服务：配置安装目录，查看状态、版本和 systemd 服务状态，并按需启动或刷新。
+- 模型管理：输入模型名称，通过 NDJSON 流实时显示下载状态、百分比和大小；成功后刷新 Header 模型选择器并优先选中新模型。
+
+Ollama 配置和模型下载仅位于配置中心，AI 对话主页不会重复显示管理面板。
+
+
 
 ## Web 使用流程
 
@@ -303,5 +310,3 @@ curl -f http://127.0.0.1:3000/api/ollama/status
 # 从网页保存安装目录并启动 Ollama 后：
 curl -f http://127.0.0.1:11434/api/version
 ```
-
-最后在网页下载一个测试模型，确认 NDJSON 进度持续更新、成功后模型列表自动刷新且 Chat 可正常对话；同时回归 `/platform`、`/demo` 和 `/api/models`。
